@@ -8,9 +8,9 @@
     { id: 'NEQUI', texto: 'Nequi', ico: 'account_balance_wallet' },
     { id: 'RECHAZO', texto: 'Simular rechazo', ico: 'error' }
   ];
-  const ORDEN_VALET = ['ENTREGADO_A_VALET', 'EN_FILA', 'ESTACIONADO', 'LLAVES_EN_CUSTODIA', 'SOLICITADO', 'DEVUELTO'];
+  const ORDEN_VALET = ['ENTREGADO_A_VALET', 'EN_FILA', 'ESTACIONADO', 'LLAVES_EN_CUSTODIA', 'SOLICITADO', 'EN_TRASLADO', 'LISTO_EN_BAHIA', 'DEVUELTO'];
   const NO_APLICA = ['CELDA_ASIGNADA', 'EN_RECORRIDO', 'ESTACIONADO', 'SALIO'];
-  const EN_ENTREGA = ['SOLICITADO', 'DEVUELTO'];
+  const EN_ENTREGA = ['SOLICITADO', 'EN_TRASLADO', 'LISTO_EN_BAHIA', 'DEVUELTO'];
   const ASPECTOS = [
     { texto: 'Puntualidad en entrega', ico: 'bolt' },
     { texto: 'Cuidado del vehículo', ico: 'verified_user' },
@@ -89,7 +89,8 @@
       <div class="absolute top-0 left-0 right-0 h-1 bg-secondary-container"></div>
       <div class="flex flex-wrap items-start justify-between gap-space-xs">
         <div class="flex flex-col gap-1">${placaHTML(v.placa, true)}
-          <p class="${clases.nota}">Ticket: <span class="font-semibold text-primary-container">${esc(v.valet.codigo || 'pendiente')}</span></p></div>
+          <p class="${clases.nota}">Ticket: <span class="font-semibold text-primary-container">${esc(v.valet.ticket || v.valet.codigo || 'pendiente')}</span></p>
+          <p class="${clases.nota}">Operador: <span class="font-semibold text-on-surface">${esc(v.valet.operador || 'por asignar')}</span>${v.valet.tarifa ? ` · $${v.valet.tarifa.toLocaleString('es-CO')} COP` : ''}</p></div>
         ${chip}
       </div>
       <div class="grid grid-cols-2 gap-space-xs">
@@ -124,10 +125,11 @@
     </div>`;
   }
 
-  // PIN simulado y estable: se deriva de la placa porque el motor no maneja uno.
+  // PIN real del motor; si el servicio aún no se pagó, se muestra un marcador.
   function pinEntrega(placa) {
-    const n = [...placa].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9000, 7);
-    return String(1000 + n);
+    const v = App.vehiculo(placa);
+    if (v && v.valet && v.valet.pin) return v.valet.pin;
+    return '····';
   }
 
   function pantallaSeguimiento(v) {
@@ -151,12 +153,20 @@
         <div class="flex flex-col gap-space-xs"><span class="text-label-md text-on-surface">Estado del despacho</span>${App.stepper(pasos, 'Estado del despacho')}</div>
         ${puntoEntrega(v)}
       </section>
+      ${v.valet.inspeccion ? `<section class="${clases.tarjeta}">
+        <h2 class="${clases.titulo}">Inspección al recibir</h2>
+        <div class="grid grid-cols-2 gap-space-xs">
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Combustible</span><span class="text-label-lg text-on-surface">${esc(v.valet.inspeccion.combustible)}</span></div>
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Kilometraje</span><span class="text-label-lg text-on-surface">${v.valet.inspeccion.km.toLocaleString('es-CO')} km</span></div>
+        </div>
+        <p class="${clases.nota}">${v.valet.inspeccion.fotos}/4 fotos · ${v.valet.inspeccion.novedades ? esc(v.valet.inspeccion.novedades) : 'sin novedades'}</p>
+      </section>` : ''}
       <section class="${clases.tarjeta}">
         <div class="flex flex-wrap items-center justify-between gap-2"><span class="${clases.nota}">Vehículo en entrega</span>${placaHTML(v.placa, true)}</div>
         <div class="bg-surface-container-low rounded-xl p-space-md flex flex-col items-center gap-1 text-center">
           <span class="${clases.nota}">Código PIN de entrega</span>
           <div class="flex items-center gap-2"><span class="text-headline-lg text-primary-container tracking-widest font-bold">${pinEntrega(v.placa)}</span><span class="text-primary-container">${icono('lock', 20)}</span></div>
-          <p class="${clases.nota} mt-1">Muestra este código al valet para autorizar la entrega de llaves.</p>
+          <p class="${clases.nota} mt-1">Muéstralo al operador del valet: es tu código de entrega.</p>
         </div>
       </section>
       <div class="flex flex-col gap-space-xs">

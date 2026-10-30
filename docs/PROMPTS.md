@@ -65,3 +65,14 @@ Por cada prompt relevante, completar:
 - **Fallo observado:** la especificación original no fijaba el nombre global de los datos, la forma de `state` ni el flujo del valet, y tenía un error (3 en pasarela + 1 afuera con capacidad 4). Claude Code lo detectó al construir contra el contrato.
 - **Corrección del prompt:** `docs/TAREA_01B_AJUSTES_MOTOR.md` fija esos puntos y agrega validación de placas (carro/moto) en el motor.
 - **Cómo verificamos:** pruebas 11–13 en `tests/engine.test.js` y recorrido en la UI con el motor real.
+
+## Prompt 8 — Valet del operador
+- **Herramienta:** Hermes (DeepSeek)
+- **Objetivo:** dar respaldo en el motor a la vista del operador del valet (ticket, inspección, ubicación, PIN).
+- **Prompt usado:** `docs/TAREA_08_HERMES_VALET_OPERADOR.md` (+ referencia `stitch_parkeafit_campus_parking_app/`).
+- **Resultado / fallo observado:** el valet de Stitch mostraba ticket, operador, inspección y PIN sin respaldo en
+  el motor (`pinEntrega` se inventaba el PIN desde la placa y el precio estaba escrito a mano). Al ejecutar, el
+  flujo se detenía porque el carro con valet entra 5.º a la pasarela y nadie confirmaba portería.
+- **Corrección del prompt:** la tarea; además se agregó el botón "Recibir vehículo" (sin él la inspección no tenía
+  por dónde empezar) y el mensaje de resultado por acción.
+- **Cómo verificamos:** §4 de la tarea (17/17, `file://`, flujo estudiante→operador→PIN con `LAU123`/`I-040`).
