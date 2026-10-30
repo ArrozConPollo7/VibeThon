@@ -298,7 +298,7 @@ App.mapas = (function () {
   const atributoFoco = ({ celda, lote, placa }) =>
     celda ? ` data-celda="${App.esc(celda)}" data-lote="${App.esc(lote)}" data-placa="${App.esc(placa)}"` : '';
 
-  const ALTURA_MAPA = { celular: 'h-80', panel: 'h-[70vh]', inicio: 'h-[280px]' };
+  const ALTURA_MAPA = { celular: 'h-80', panel: 'h-[70vh]', inicio: 'h-[280px]', valetOperador: 'h-80' };
 
   function hueco(nombre, etiqueta, foco = {}) {
     return `<div class="mapa-hueco rounded-xl ${ALTURA_MAPA[nombre]}" data-key="mapa-${nombre}" data-mapa="${nombre}" role="group" aria-label="${App.esc(etiqueta)}"${atributoFoco(foco)}></div>`;

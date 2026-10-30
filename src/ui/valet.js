@@ -2,6 +2,7 @@
 (function () {
   const { esc, icono, placaHTML, clases } = App;
   const PRECIO = '$8.000';
+  const MINUTOS_TRASLADO = 2;
   const PASOS = ['Selección y pago', 'Entrega del vehículo', 'Estacionamiento y llaves'];
   const METODOS = [
     { id: 'TARJETA', texto: 'Tarjeta', ico: 'credit_card' },
@@ -132,18 +133,26 @@
     return '····';
   }
 
+  // El motor agenda dos tramos: sacar el carro (devolverEn) y llevarlo a la bahía (trasladoEn).
+  function minutosHastaBahia({ estado, devolverEn, trasladoEn }) {
+    const reloj = App.engine.state.clock;
+    const fin = estado === 'EN_TRASLADO' ? trasladoEn : devolverEn + MINUTOS_TRASLADO;
+    return Math.max(0, fin - reloj);
+  }
+
   function pantallaSeguimiento(v) {
     const devuelto = v.valet.estado === 'DEVUELTO';
-    const faltan = v.valet.devolverEn != null ? Math.max(0, v.valet.devolverEn - App.engine.state.clock) : 0;
+    const enBahia = devuelto || v.valet.estado === 'LISTO_EN_BAHIA';
+    const faltan = enBahia ? 0 : minutosHastaBahia(v.valet);
     const pasos = [
       { titulo: 'Solicitud recibida', detalle: 'Procesada por el sistema de parqueaderos', estado: 'hecho' },
       { titulo: 'Retiro de llaves', detalle: v.valet.casillero ? `Casillero ${esc(v.valet.casillero)}` : 'Llaves retiradas', estado: 'hecho' },
-      { titulo: 'Vehículo en camino', detalle: devuelto ? 'Traslado terminado' : 'El valet lleva tu carro a la bahía', estado: devuelto ? 'hecho' : 'actual', ico: 'directions_car' },
-      { titulo: 'Listo en bahía de entrega', detalle: devuelto ? 'Ya puedes recibirlo' : 'Pendiente', estado: devuelto ? 'actual' : 'pendiente', ico: 'location_on' }
+      { titulo: 'Vehículo en camino', detalle: enBahia ? 'Traslado terminado' : 'El valet lleva tu carro a la bahía', estado: enBahia ? 'hecho' : 'actual', ico: 'directions_car' },
+      { titulo: 'Listo en bahía de entrega', detalle: devuelto ? 'Ya puedes recibirlo' : enBahia ? 'Muestra tu PIN al operador' : 'Pendiente', estado: enBahia ? 'actual' : 'pendiente', ico: 'location_on' }
     ];
     return `<div class="${clases.pantalla}" data-key="p-seguimiento">
-      ${App.aviso('ok', `<p class="text-label-md">${devuelto ? 'Tu vehículo llegó' : 'Solicitud confirmada'}</p><p>${devuelto ? `Te espera en ${porteria(v)}` : `Tu vehículo va en camino a ${porteria(v)}`}</p>`)}
-      ${App.tituloPantalla('Seguimiento de entrega', devuelto ? App.chip('libre', 'Listo') : App.chip('reservada', `En traslado ~${faltan} min`), `Valet · Ticket ${esc(v.valet.codigo || '')}`)}
+      ${App.aviso('ok', `<p class="text-label-md">${enBahia ? 'Tu vehículo llegó' : 'Solicitud confirmada'}</p><p>${enBahia ? `Te espera en ${porteria(v)}` : `Tu vehículo va en camino a ${porteria(v)}`}</p>`)}
+      ${App.tituloPantalla('Seguimiento de entrega', enBahia ? App.chip('libre', 'Listo') : App.chip('reservada', `En traslado ~${faltan} min`), `Valet · Ticket ${esc(v.valet.ticket || v.valet.codigo || '')}`)}
       <section class="${clases.tarjeta} gap-space-md">
         <div class="flex items-center justify-between bg-surface-container-low rounded-xl p-space-sm">
           <div class="flex flex-col"><span class="${clases.nota}">Tiempo estimado de llegada</span>
@@ -171,7 +180,7 @@
       </section>
       <div class="flex flex-col gap-space-xs">
         <button type="button" class="${clases.primario}" data-accion="confirmarRecepcion"${devuelto ? '' : ' disabled'}>${icono('verified', 22)}Confirmar recepción del vehículo</button>
-        <p class="${clases.nota} text-center">${devuelto ? 'Presiona este botón cuando hayas verificado tu vehículo.' : 'Disponible cuando tu vehículo llegue a la bahía.'}</p>
+        <p class="${clases.nota} text-center">${devuelto ? 'Presiona este botón cuando hayas verificado tu vehículo.' : 'Disponible cuando el operador te entregue el vehículo con tu PIN.'}</p>
       </div>
     </div>`;
   }

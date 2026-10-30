@@ -56,6 +56,9 @@
     if (v.valet && v.valet.estado === 'SELECCIONADO') return 'Abre Valet en el celular y completa el pago.';
     if (v.valet && v.valet.estado === 'PAGADO') return 'Marca las dos casillas en Valet y confirma la entrega.';
     if (v.valet && v.valet.estado === 'LLAVES_EN_CUSTODIA') return 'Pulsa Pedir que traigan mi vehículo en Valet.';
+    if (v.valet && ['SOLICITADO', 'EN_TRASLADO'].includes(v.valet.estado)) return 'El carro va hacia la bahía: avanza el reloj.';
+    if (v.valet && v.valet.estado === 'LISTO_EN_BAHIA') return 'Abre Valet (operador) y escribe el PIN que muestra el estudiante para entregar el carro.';
+    if (v.valet && v.valet.estado === 'DEVUELTO') return 'Pulsa Confirmar recepción del vehículo en Valet.';
     if (v.estado === 'AFUERA') return `${v.placa} espera afuera: confirma en portería a los de adelante para abrir cupo.`;
     if (v.estado === 'EN_PASARELA') {
       if (v.saleSinEstacionar) return `${v.placa} sale sin estacionar: confirma en portería a los de adelante.`;

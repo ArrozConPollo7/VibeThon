@@ -2,11 +2,11 @@
 // Solo lee y acciona a través de App.engine; el motor es el que manda (doble validación).
 (function () {
   const GRUPOS = [
-    { id: 'recibir', titulo: 'Por recibir', estados: ['PAGADO'], icono: 'inbox' },
-    { id: 'fila', titulo: 'Recibidos / en fila', estados: ['ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO'], icono: 'queue' },
+    { id: 'recibir', titulo: 'Por recibir', estados: ['PAGADO'], icono: 'vpn_key' },
+    { id: 'fila', titulo: 'Recibidos / en fila', estados: ['ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO'], icono: 'directions_car' },
     { id: 'estacionados', titulo: 'Estacionados', estados: ['ESTACIONADO', 'LLAVES_EN_CUSTODIA'], icono: 'local_parking' },
     { id: 'solicitados', titulo: 'Solicitados / en traslado', estados: ['SOLICITADO', 'EN_TRASLADO'], icono: 'schedule' },
-    { id: 'bahia', titulo: 'Listos en bahía', estados: ['LISTO_EN_BAHIA'], icono: 'flag' }
+    { id: 'bahia', titulo: 'Listos en bahía', estados: ['LISTO_EN_BAHIA'], icono: 'pin_drop' }
   ];
   const COMBUSTIBLES = ['vacío', '1/4', '1/2', '3/4', 'lleno'];
   const TEXTO_ESTADO = {
@@ -30,12 +30,12 @@
   }
 
   function tarjeta(item, activa) {
-    const chip = '<span class="text-[11px] uppercase tracking-wide text-on-surface-variant">' + App.esc(TEXTO_ESTADO[item.estado] || item.estado) + '</span>';
+    const chip = '<span class="text-label-sm text-on-surface-variant">' + App.esc(TEXTO_ESTADO[item.estado] || item.estado) + '</span>';
     const borde = activa ? 'ring-2 ring-primary-container' : 'hover:bg-surface-container';
     return `<button type="button" class="w-full text-left p-space-sm rounded-xl bg-surface-container-lowest ${borde} flex flex-col gap-1" data-accion="valetSelOperador" data-placa="${App.esc(item.placa)}"${activa ? ' aria-current="true"' : ''}>
       <div class="flex items-center justify-between gap-2">${App.placaHTML(item.placa)}${chip}</div>
       <span class="text-label-md text-on-surface">${App.esc(item.conductor || '—')}</span>
-      <span class="text-[12px] text-on-surface-variant flex flex-wrap gap-x-3">
+      <span class="text-label-sm text-on-surface-variant flex flex-wrap gap-x-3">
         <span>Ticket ${App.esc(item.ticket || '—')}</span>
         <span>En custodia ${minutosTexto(item.enCustodiaMin)}</span>
       </span>
@@ -53,7 +53,7 @@
       if (!items.length) return '';
       return `<section class="flex flex-col gap-space-xs" data-key="grupo-${g.id}">
         <h3 class="text-label-lg text-on-surface flex items-center gap-2">${App.icono(g.icono, 18)} ${g.titulo}
-          <span class="text-[12px] px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">${items.length}</span></h3>
+          <span class="text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">${items.length}</span></h3>
         ${items.map((i) => tarjeta(i, i.placa === sel)).join('')}
       </section>`;
     }).join('');
@@ -108,7 +108,7 @@
       ['Celda', item.celdaId || 'Sin celda todavía'],
       ['Caja de llaves', item.casillero ? 'Caja ' + item.casillero : 'Sin llaves en custodia']
     ];
-    const foco = item.celdaId ? { celda: item.celdaId, lote: item.zona } : {};
+    const foco = item.celdaId ? { celda: item.celdaId, lote: item.zona, placa: item.placa } : {};
     return `<div class="flex flex-col gap-space-sm" data-key="donde">
       <dl class="grid grid-cols-1 gap-1">
         ${filas.map(([k, v]) => `<div class="flex justify-between gap-2 border-b border-outline-variant/40 py-1">
@@ -138,7 +138,7 @@
       ${aviso}
       <header class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2">${App.placaHTML(item.placa, true)}<span class="text-label-lg text-on-surface">${App.esc(item.conductor || '—')}</span></div>
-        <span class="text-[12px] uppercase tracking-wide text-on-surface-variant">${App.esc(TEXTO_ESTADO[item.estado] || item.estado)}</span>
+        <span class="text-label-sm text-on-surface-variant">${App.esc(TEXTO_ESTADO[item.estado] || item.estado)}</span>
       </header>
       <p class="text-body-md text-on-surface-variant">Ticket <b class="text-on-surface">${App.esc(item.ticket || '—')}</b> · Operador ${App.esc(item.operador || '—')} · Tarifa ${item.tarifa ? '$' + item.tarifa.toLocaleString('es-CO') : '—'}</p>
       <h3 class="text-label-lg text-on-surface">1. Recepción e inspección</h3>
@@ -163,7 +163,7 @@
       <div class="flex flex-col gap-space-md">
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-headline-sm text-on-surface">Valet · operador</h2>
-          <span class="text-[12px] px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant">${activos.length} activos</span>
+          <span class="text-label-sm px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant">${activos.length} activos</span>
         </div>
         ${columna(activos, sel)}
       </div>

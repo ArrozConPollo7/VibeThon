@@ -315,3 +315,18 @@ ganchos en `app.js` e `index.html` + ajustes en `valet.js`. No se tocó `mapa.js
   sin tocar `app.js` más de lo necesario).
 - **Congelamiento:** se hizo a las 16:20, no a las 15:50, porque `TAREA_08` llegó al repo a las 15:31 (antes solo
   existían TAREA_01…04). El motor quedó congelado a las 15:47 (`4044157`, 17/17).
+
+## Integración TAREA 08 + TAREA 09
+
+`origin/main` (TAREA 08) quedó integrado en `feat/frontend` por merge; el único conflicto fue este archivo y se conservaron ambas secciones.
+
+### Corregido al integrar
+- Abrir el detalle del operador rompía el render (`TypeError` en `enfocar`): `valet-operador.js` no pasaba `placa` al mapa.
+- `App.mapas` no tenía altura para el mapa `valetOperador` (682 px y clase `undefined`).
+- Íconos `inbox`, `queue` y `flag` fuera de la fuente local: se habrían visto como texto. Se usan íconos que sí están.
+- Textos de 11 y 12 px en el operador: ahora 14 px, como exige `DESIGN.md`.
+- Estudiante con el carro en bahía: seguía viendo "En traslado ~0 min". Ahora distingue traslado, bahía esperando PIN y entregado.
+- La guía de la demo no explicaba el paso del PIN.
+
+### Verificación
+Chrome sobre `file://` y sin red. Motor: 17 de 17. Operador del valet: 12 de 12, incluido el pendiente oscuro + A++ a 390 px. TAREA 09: 12 de 12. TAREA 05 §7: 29 de 29, con Play x10 de 15 s; esa prueba entrega el carro llamando a `valetEntregarCliente` con el PIN.
