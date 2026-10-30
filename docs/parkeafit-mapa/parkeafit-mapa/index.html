@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo mapa ParkEAFIT</title>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#eef1f3;color:#17212b;padding:16px}
+  .layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;max-width:1200px;margin:auto}
+  @media (max-width:800px){.layout{grid-template-columns:1fr}}
+  #mapa{background:#fff;border-radius:12px;overflow:hidden;height:80vh}
+  .card{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  button{padding:8px 12px;border-radius:8px;border:1px solid #ccd;background:#fff;cursor:pointer;margin:2px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="mapa"></div>
+  <div>
+    <div class="card">
+      <button data-lot="N">Principal</button>
+      <button data-lot="I">Ingeniería</button>
+      <button data-lot="G">Idiomas</button>
+      <button id="todo">Ver todo</button>
+    </div>
+    <div id="stats"></div>
+    <div class="card" id="detalle">Toca una celda.</div>
+    <div class="card">
+      <button id="asignar">Asignar celda en Principal (acceso Regional)</button>
+    </div>
+  </div>
+</div>
+
+<script src="parking-map.js"></script>
+<script>
+  const statsBox = document.getElementById("stats");
+  const detalle = document.getElementById("detalle");
+
+  const map = ParkingMap.create(document.getElementById("mapa"), {
+    onSelect: celda => {
+      detalle.innerHTML = `<b>${celda.id}</b> · ${celda.lotName}<br>${celda.kindLabel} · ${celda.statusLabel}`;
+      if (celda.status === "free") {
+        const b = document.createElement("button");
+        b.textContent = "Reservar";
+        b.onclick = () => { map.setCellStatus(celda.id, "held"); detalle.textContent = "Reservada " + celda.id; };
+        detalle.append(document.createElement("br"), b);
+      }
+    },
+    onChange: stats => {
+      statsBox.innerHTML = Object.values(stats).map(s =>
+        `<div class="card"><b>${s.name}</b>: ${s.free} libres de ${s.total}</div>`).join("");
+    }
+  });
+
+  // Estado inicial simulado: ~74% ocupado. En la app esto vendrá del archivo de eventos.
+  const inicial = {};
+  map.getCells().forEach(c => { if (Math.random() < 0.74) inicial[c.id] = "taken"; });
+  map.setStatuses(inicial);
+
+  document.querySelectorAll("[data-lot]").forEach(b => b.onclick = () => map.focusLot(b.dataset.lot));
+  document.getElementById("todo").onclick = () => map.showAll();
+  document.getElementById("asignar").onclick = () => {
+    const c = map.firstFree("N");
+    if (!c) { detalle.textContent = "Principal está lleno."; return; }
+    map.setCellStatus(c.id, "held"); map.select(c.id); map.focusLot("N");
+    detalle.textContent = `Asignada ${c.id} (posición ${c.order} desde el acceso)`;
+  };
+</script>
+</body>
+</html>

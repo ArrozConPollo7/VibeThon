@@ -6,66 +6,61 @@
   var RELOJ_INICIAL = 450;          // 07:30 en minutos desde medianoche
   var CAPACIDAD_PASARELA = 4;       // el 5.º vehículo espera AFUERA
 
+  // Coordenadas reales del mapa (890×1076 px). Cada acceso llega primero a su parqueadero.
+  var MAPA = (typeof module !== 'undefined' && module.exports) ? require('./mapa-datos.js') : global.ParkMapaDatos;
+  if (!MAPA) throw new Error('Falta src/mapa-datos.js: cárgalo antes de src/data.js en index.html.');
+
   var ACCESOS = {
-    REGIONAL: { nombre: 'Regional', x: 0, y: 30, porteria: { x: 8, y: 30 } },
-    LAS_VEGAS: { nombre: 'Las Vegas', x: 100, y: 30, porteria: { x: 92, y: 30 } }
+    REGIONAL: { nombre: 'Regional', lote: 'N', x: 214, y: 240, porteria: { x: 214, y: 240 } },
+    LAS_VEGAS: { nombre: 'Las Vegas', lote: 'I', x: 330, y: 1062, porteria: { x: 330, y: 1062 } }
   };
 
   var ZONAS = {
-    A: { nombre: 'Zona A', x: 15 },
-    B: { nombre: 'Zona B', x: 50 },
-    C: { nombre: 'Zona C', x: 84 },
-    M: { nombre: 'Zona M (motos)', x: 50 }
+    N: { nombre: 'Parqueadero Principal' },
+    I: { nombre: 'Parqueadero de Ingeniería' },
+    M: { nombre: 'Motos · Ingeniería' }
   };
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-  // --- Celdas (cuadrícula 0..100 x 0..60) --------------------------------
-  function generarCeldas() {
-    var celdas = [];
-    var xsA = [6, 12, 18, 24], ysA = [6, 18, 30, 42, 54];
-    var xsB = [42, 50, 58], ysB = [10, 22, 34, 46];
-    var xsC = [72, 80, 88, 96], ysC = [12, 30];
-    var i;
+  // --- Celdas: las 624 del mapa (Principal + Ingeniería) + 10 de moto ----
+  // Las celdas PMR (movilidad reducida) y ECO (baja emisión) existen en el mapa pero el
+  // motor no las asigna a carros generales: su tipo no coincide con CARRO ni MOTO.
+  var TIPO_POR_CLASE = { general: 'CARRO', pmr: 'PMR', eco: 'ECO', prov: 'PROV' };
 
-    for (i = 0; i < 20; i++) {
-      celdas.push({ id: 'A-' + pad2(i + 1), zona: 'A', tipo: 'CARRO', x: xsA[i % 4], y: ysA[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
-    }
-    for (i = 0; i < 12; i++) {
-      celdas.push({ id: 'B-' + pad2(i + 1), zona: 'B', tipo: 'CARRO', x: xsB[i % 3], y: ysB[Math.floor(i / 3)], estado: 'LIBRE', placa: null });
-    }
-    for (i = 0; i < 8; i++) {
-      celdas.push({ id: 'C-' + pad2(i + 1), zona: 'C', tipo: 'CARRO', x: xsC[i % 4], y: ysC[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
-    }
-    // Zona M: 10 celdas de moto en una franja al sur del centro.
-    for (i = 0; i < 10; i++) {
-      celdas.push({ id: 'M-' + pad2(i + 1), zona: 'M', tipo: 'MOTO', x: 37 + i * 3, y: 56, estado: 'LIBRE', placa: null });
+  function generarCeldas() {
+    var celdas = MAPA.celdas.map(function (c) {
+      return { id: c[0], zona: c[1], tipo: TIPO_POR_CLASE[c[2]] || 'CARRO', orden: c[3], x: c[4], y: c[5], estado: 'LIBRE', placa: null };
+    });
+    for (var i = 0; i < 10; i++) {
+      celdas.push({ id: 'M-' + pad2(i + 1), zona: 'M', tipo: 'MOTO', orden: i + 1, x: 300 + i * 6, y: 1000, estado: 'LIBRE', placa: null });
     }
     return celdas;
   }
 
-  var PLACAS_OCUPADAS = [
-    'JKL102', 'MNO334', 'PQR556', 'STU778', 'VWX990', 'ABC123', 'DEF456', 'GHI789',
-    'JMN234', 'PQS567', 'TVW890', 'XYZ012', 'BCD345', 'EFG678', 'HIJ901', 'KLM234',
-    'NOP567', 'QRS890', 'TUV123', 'WXY456', 'ZAB789', 'CDE012', 'FGH345', 'IJK678',
-    'LMN901', 'OPQ234', 'RST567', 'UVW890', 'XYA123', 'BCF456', 'DEH789', 'FGK012',
-    'HJM345', 'KNP678'
-  ];
-
-  var PLACAS_MOTO_OCUPADAS = ['MTA12B', 'MTB34C', 'MTC56D', 'MTD78E', 'MTE90F', 'MTF11G', 'MTG22H'];
-
+  // Escasez realista: casi todo ocupado a las 07:30. Libres: 6 de carro, 2 especiales, 3 de moto.
   var CELDAS_LIBRES = {
-    'A-07': true, 'A-15': true, 'B-03': true, 'B-11': true, 'C-02': true, 'C-06': true,
+    'N-150': true, 'N-320': true, 'N-410': true, 'I-060': true, 'I-120': true, 'I-170': true,
+    'N-002': true, 'I-005': true,
     'M-04': true, 'M-08': true, 'M-10': true
   };
 
+  function placaGenerada(n, moto) {
+    var L = 'BCDFGHJKLMNPQSTVWXYZ';
+    var a = L[n % 20], b = L[Math.floor(n / 20) % 20], c = moto ? 'M' : 'K';
+    return moto ? c + a + b + pad2(n % 100) + 'E' : c + a + b + String(100 + (n * 7) % 900);
+  }
+
   function construirCeldas() {
     var celdas = generarCeldas();
-    var n = 0, m = 0;
+    var n = 0, m = 0, usadas = {};
     celdas.forEach(function (c) {
-      if (CELDAS_LIBRES[c.id]) return;               // carros: 6 libres · motos: 3 libres
+      if (CELDAS_LIBRES[c.id]) return;
+      var placa;
+      do { placa = c.tipo === 'MOTO' ? placaGenerada(m++, true) : placaGenerada(n++, false); } while (usadas[placa]);
+      usadas[placa] = true;
       c.estado = 'OCUPADA';
-      c.placa = c.tipo === 'MOTO' ? PLACAS_MOTO_OCUPADAS[m++] : PLACAS_OCUPADAS[n++];  // 34 + 7 ocupadas
+      c.placa = placa;
     });
     return celdas;
   }
@@ -97,7 +92,7 @@
       placa: c.placa,
       conductor: CONDUCTORES[i % CONDUCTORES.length],
       tipo: c.tipo,
-      acceso: c.zona === 'A' ? 'REGIONAL' : (c.zona === 'C' ? 'LAS_VEGAS' : (i % 2 === 0 ? 'REGIONAL' : 'LAS_VEGAS')),
+      acceso: c.zona === 'N' ? 'REGIONAL' : 'LAS_VEGAS',
       estado: 'ESTACIONADO',
       celdaId: c.id,
       horaClase: null
@@ -125,48 +120,48 @@
     { t: 452, tipo: 'LLEGADA', placa: 'TRX103', conductor: 'Jorge Mesa', acceso: 'REGIONAL', horaClase: 480 },
     { t: 453, tipo: 'LLEGADA', placa: 'TRX104', conductor: 'Karina Ríos', acceso: 'LAS_VEGAS', horaClase: 472 },
     // Salidas de carros que ya estaban estacionados
-    { t: 455, tipo: 'SALIDA', placa: placaEnCelda('A-01') },
+    { t: 455, tipo: 'SALIDA', placa: placaEnCelda('N-030') },
     { t: 456, tipo: 'LLEGADA', placa: 'TRX105', conductor: 'Luis Pardo', acceso: 'REGIONAL', horaClase: 468 },
-    { t: 457, tipo: 'SALIDA', placa: placaEnCelda('B-05') },
+    { t: 457, tipo: 'SALIDA', placa: placaEnCelda('I-040') },
     { t: 458, tipo: 'LLEGADA', placa: 'TRX106', conductor: 'Marta Gil', acceso: 'LAS_VEGAS', horaClase: 490 },
     { t: 459, tipo: 'LLEGADA', placa: 'TRX107', conductor: 'Nicolás Rojas', acceso: 'REGIONAL', horaClase: 476 },
     // Ráfaga en REGIONAL: la pasarela se llena (>= 5 llegadas seguidas)
     { t: 461, tipo: 'LLEGADA', placa: 'TRX108', conductor: 'Olga Duque', acceso: 'REGIONAL', horaClase: 485 },
     { t: 462, tipo: 'LLEGADA', placa: 'TRX109', conductor: 'Pablo Sierra', acceso: 'REGIONAL', horaClase: 478 },
-    { t: 462, tipo: 'SALIDA', placa: placaEnCelda('A-09') },
+    { t: 462, tipo: 'SALIDA', placa: placaEnCelda('N-060') },
     { t: 463, tipo: 'LLEGADA', placa: 'TRX110', conductor: 'Rubén Castro', acceso: 'REGIONAL', horaClase: 470 },
     { t: 464, tipo: 'LLEGADA', placa: 'TRX111', conductor: 'Sara Naranjo', acceso: 'REGIONAL', horaClase: 482 },
     { t: 465, tipo: 'LLEGADA', placa: 'TRX112', conductor: 'Tomás Arango', acceso: 'REGIONAL', horaClase: 469 },
     { t: 466, tipo: 'LLEGADA', placa: 'TRX113', conductor: 'Úrsula Peña', acceso: 'REGIONAL', horaClase: 488 },
-    { t: 466, tipo: 'SALIDA', placa: placaEnCelda('C-01') },
+    { t: 466, tipo: 'SALIDA', placa: placaEnCelda('I-010') },
     { t: 468, tipo: 'LLEGADA', placa: 'TRX114', conductor: 'Valeria Londoño', acceso: 'REGIONAL', horaClase: 474 },
     // Un carro que sale sin estacionar (marcado al llegar)
     { t: 470, tipo: 'LLEGADA', placa: 'SNX789', conductor: 'Ana Gómez', acceso: 'REGIONAL', saleSinEstacionar: true, horaClase: 473 },
-    { t: 470, tipo: 'SALIDA', placa: placaEnCelda('A-13') },
+    { t: 470, tipo: 'SALIDA', placa: placaEnCelda('N-090') },
     // Dos motos: van a la Zona M y no frenan a los carros
     { t: 460, tipo: 'LLEGADA', placa: 'MOT12A', conductor: 'Sara Naranjo', acceso: 'LAS_VEGAS', horaClase: 480 },
     { t: 467, tipo: 'LLEGADA', placa: 'MOT34B', conductor: 'Tomás Arango', acceso: 'REGIONAL', horaClase: 490 },
     { t: 471, tipo: 'LLEGADA', placa: 'TRX115', conductor: 'Carlos Ruiz', acceso: 'LAS_VEGAS', horaClase: 484 },
     // Un carro con valet
     { t: 472, tipo: 'LLEGADA', placa: 'VLT001', conductor: 'Diana Pérez', acceso: 'LAS_VEGAS', valet: true, horaClase: 478 },
-    { t: 474, tipo: 'SALIDA', placa: placaEnCelda('B-07') },
+    { t: 474, tipo: 'SALIDA', placa: placaEnCelda('I-080') },
     { t: 474, tipo: 'LLEGADA', placa: 'TRX116', conductor: 'Elena Mora', acceso: 'LAS_VEGAS', horaClase: 492 },
     { t: 476, tipo: 'LLEGADA', placa: 'TRX117', conductor: 'Felipe Ortiz', acceso: 'LAS_VEGAS', horaClase: 486 },
-    { t: 478, tipo: 'SALIDA', placa: placaEnCelda('A-17') },
+    { t: 478, tipo: 'SALIDA', placa: placaEnCelda('N-120') },
     { t: 478, tipo: 'LLEGADA', placa: 'TRX118', conductor: 'Gina Salas', acceso: 'REGIONAL', horaClase: 488 },
     { t: 480, tipo: 'LLEGADA', placa: 'TRX119', conductor: 'Hugo Vélez', acceso: 'LAS_VEGAS', horaClase: 495 },
-    { t: 482, tipo: 'SALIDA', placa: placaEnCelda('C-05') },
+    { t: 482, tipo: 'SALIDA', placa: placaEnCelda('I-025') },
     { t: 483, tipo: 'LLEGADA', placa: 'TRX120', conductor: 'Irene Cano', acceso: 'REGIONAL', horaClase: 497 },
     { t: 486, tipo: 'LLEGADA', placa: 'TRX121', conductor: 'Jorge Mesa', acceso: 'LAS_VEGAS', horaClase: 495 },
-    { t: 486, tipo: 'SALIDA', placa: placaEnCelda('B-09') },
+    { t: 486, tipo: 'SALIDA', placa: placaEnCelda('I-100') },
     { t: 490, tipo: 'LLEGADA', placa: 'TRX122', conductor: 'Karina Ríos', acceso: 'REGIONAL', horaClase: 500 },
-    { t: 492, tipo: 'SALIDA', placa: placaEnCelda('A-19') },
+    { t: 492, tipo: 'SALIDA', placa: placaEnCelda('N-200') },
     { t: 495, tipo: 'LLEGADA', placa: 'TRX123', conductor: 'Luis Pardo', acceso: 'LAS_VEGAS', horaClase: 505 },
-    { t: 498, tipo: 'SALIDA', placa: placaEnCelda('B-01') },
+    { t: 498, tipo: 'SALIDA', placa: placaEnCelda('I-140') },
     { t: 500, tipo: 'LLEGADA', placa: 'TRX124', conductor: 'Marta Gil', acceso: 'REGIONAL', horaClase: 512 },
-    { t: 504, tipo: 'SALIDA', placa: placaEnCelda('C-07') },
+    { t: 504, tipo: 'SALIDA', placa: placaEnCelda('I-055') },
     { t: 505, tipo: 'LLEGADA', placa: 'TRX125', conductor: 'Nicolás Rojas', acceso: 'LAS_VEGAS', horaClase: 515 },
-    { t: 508, tipo: 'SALIDA', placa: placaEnCelda('A-05') }
+    { t: 508, tipo: 'SALIDA', placa: placaEnCelda('N-015') }
   ].sort(function (a, b) { return a.t - b.t; }); // orden estable en Node/Chrome modernos
 
   // --- Perfil histórico (inventado, fuente simulada) --------------------

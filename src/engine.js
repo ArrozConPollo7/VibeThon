@@ -602,28 +602,33 @@
       if (!v) return null;
       var acceso = datosBase.accesos[v.acceso];
       var porteria = acceso.porteria;
-      var puntos = [{ x: acceso.x, y: acceso.y }, { x: porteria.x, y: porteria.y }];
+      var puntos = [{ x: acceso.x, y: acceso.y }];
+      if (porteria.x !== acceso.x || porteria.y !== acceso.y) puntos.push({ x: porteria.x, y: porteria.y });
       var pasos = ['Avanza a la portería ' + acceso.nombre + '.'];
 
       var celda = celdaDe(v);
       if (!celda) {
         pasos.push('Espera tu celda en la pasarela.');
-        return { puntos: puntos, pasos: pasos };
+        return { puntos: puntos, pasos: pasos, lote: null };
       }
 
-      var zona = datosBase.zonas[celda.zona] || { nombre: 'Zona ' + celda.zona, x: 50 };
-      puntos.push({ x: zona.x, y: 30 });
-      puntos.push({ x: celda.x, y: 30 });
+      var zona = datosBase.zonas[celda.zona] || { nombre: 'Zona ' + celda.zona };
+      var mismoLote = acceso.lote ? acceso.lote === celda.zona : true;
+      // Recorrido aproximado: de la portería se baja por la vía interna (eje x de la portería)
+      // hasta la altura de la celda y luego se entra al parqueadero.
+      puntos.push({ x: porteria.x, y: celda.y });
       puntos.push({ x: celda.x, y: celda.y });
-      pasos.push('Sigue recto hacia la ' + zona.nombre + '.');
-      var lado = celda.x < 50 ? 'izquierda' : (celda.x > 50 ? 'derecha' : 'centro');
-      pasos.push('Celda ' + celda.id + ' a tu ' + lado + '.');
-      return { puntos: puntos, pasos: pasos };
+      pasos.push(mismoLote
+        ? 'Entra al ' + zona.nombre + '.'
+        : 'Sigue por la vía interna hasta el ' + zona.nombre + '.');
+      pasos.push('Busca la celda ' + celda.id + (celda.orden ? ' (n.º ' + celda.orden + ' desde la entrada)' : '') + '.');
+      return { puntos: puntos, pasos: pasos, lote: celda.zona };
     }
 
     function resumen() {
       var lista = necesitanCeldaGlobal('CARRO');
-      var L = libres().length;
+      // Solo cuentan las celdas asignables (carro y moto); PMR/ECO se informan aparte.
+      var L = libres('CARRO').length + libres('MOTO').length;
       var accesos = {};
       var justicia = {};
       var nombres = Object.keys(state.pasarelas);
@@ -660,7 +665,9 @@
       });
       if (mejor) accesos[mejor.nombre].recomendado = true;
 
-      var total = state.celdas.length;
+      var total = state.celdas.filter(function (c) {
+        var t = c.tipo || 'CARRO'; return t === 'CARRO' || t === 'MOTO';
+      }).length;
       return {
         reloj: horaTexto(state.clock),
         libres: L,

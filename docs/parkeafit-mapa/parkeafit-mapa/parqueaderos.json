@@ -1,0 +1,45 @@
+{
+  "fuente": "Reglamento de ingreso peatonal y vehicular, Universidad EAFIT (https://www.eafit.edu.co/reglamento-ingreso-peatonal-vehicular), consultado 2026-10-30",
+  "sistemaCoordenadas": "Pixeles sobre el mapa base de 890x1076 (misma imagen del reto). Origen arriba-izquierda.",
+  "parqueaderos": [
+    {
+      "id": "N",
+      "nombreApp": "Parqueadero Principal",
+      "nombreOficial": "Parqueadero vehicular norte",
+      "referencia": "Entre Av. Las Vegas, cancha principal, Biblioteca y parque efímero",
+      "acceso": { "nombre": "Acceso Regional (portería Instituto del Plástico)", "punto": [214, 240] },
+      "salida": "Portería de salida vehicular norte, Av. Las Vegas",
+      "celdasCarro": { "total": 438, "general": 426, "movilidadReducida": 8, "bajaEmision": 4 },
+      "celdasMoto": 0,
+      "poligono": [[428,24],[498,24],[520,88],[505,300],[488,420],[478,478],[362,478],[362,428],[428,428]],
+      "anguloCeldas": 0
+    },
+    {
+      "id": "I",
+      "nombreApp": "Parqueadero de Ingeniería",
+      "nombreOficial": "Parqueadero vehicular sur",
+      "referencia": "Entre La Aguacatala II, Av. Las Vegas y Edificio de Ingenierías (incluye sótano). Rueda Pelton.",
+      "acceso": { "nombre": "Acceso Las Vegas (sector La Aguacatala)", "punto": [330, 1062] },
+      "celdasCarro": { "total": 186, "general": 178, "movilidadReducida": 4, "bajaEmision": 4 },
+      "celdasMoto": { "total": 270, "general": 250, "electricas": 20 },
+      "totalOficial": 436,
+      "nota": "El reglamento dice 436 celdas, pero su desglose suma 456. Se usan las cifras del desglose.",
+      "poligono": [[150,940],[357,931],[342,995],[322,1066],[150,1050]],
+      "anguloCeldas": 0
+    },
+    {
+      "id": "G",
+      "nombreApp": "Parqueadero de Idiomas",
+      "nombreOficial": "Parqueadero vehicular Parque Los Guayabos",
+      "referencia": "Entre calle 4 sur, calle 5 sur y Av. Las Vegas",
+      "acceso": { "nombre": "Acceso Guayabos (calle 5 sur)", "punto": [836, 318] },
+      "celdasCarro": { "total": 256, "general": 249, "movilidadReducida": 4, "proveedores": 3 },
+      "celdasMoto": { "total": 120, "general": 120 },
+      "totalOficial": 376,
+      "nota": "Los empleados exentos de cobro deben parquear aquí.",
+      "poligono": [[724,163],[857,256],[806,372],[664,322]],
+      "anguloCeldas": 35
+    }
+  ],
+  "totalCeldasCarroApp": 880
+}
