@@ -18,7 +18,8 @@ celdas y valet opcional. Todo simulado y local: un HTML + JavaScript clásico, s
 ## Cómo probar
 
 ```bash
-node tests/engine.test.js      # 10/10 pruebas pasaron
+node tests/engine.test.js      # 17/17 pruebas
+node tests/casos.test.js       # 18/18 casos de ejemplo
 ```
 
 Verificación manual: abrir `src/debug.html` con doble clic (funciona en `file://`) y usar los botones de avance,

@@ -330,3 +330,69 @@ ganchos en `app.js` e `index.html` + ajustes en `valet.js`. No se tocó `mapa.js
 
 ### Verificación
 Chrome sobre `file://` y sin red. Motor: 17 de 17. Operador del valet: 12 de 12, incluido el pendiente oscuro + A++ a 390 px. TAREA 09: 12 de 12. TAREA 05 §7: 29 de 29, con Play x10 de 15 s; esa prueba entrega el carro llamando a `valetEntregarCliente` con el PIN.
+
+## Estado TAREA 10
+
+Orden ejecutado: **A** (casos JSON + runner) → **B** (operador completo) → **C** (info del valet para el
+estudiante) → **D** (preferencia de parqueadero/celda). Commit por bloque y `git tag ui-v4` antes de empezar.
+
+### A — Casos de ejemplo (obligatorio)
+`tests/casos.json` (**18 casos**) + `tests/casos.test.js` (runner sin dependencias): crea un motor nuevo por caso,
+ejecuta `pasos`, valida `espera` y `verificar` con rutas con puntos (p. ej. `valet.estado`) y llama
+`verificarInvariantes()` tras cada paso. Comando: `node tests/casos.test.js`.
+
+```
+node tests/engine.test.js → 17/17 pruebas pasaron
+node tests/casos.test.js  → 18/18 casos pasaron
+```
+
+Cobertura: placas válidas/minúsculas/inválidas/duplicadas, nombre y hora de clase inválidos, FIFO entre accesos,
+orden por fila, pasarela llena + entrada desde afuera, sale sin estacionar, portería (no es el primero, sin celda,
+placa ajena), motos sin bloqueo cruzado, preferencia de celda cumplida, de parqueadero cumplida, no cumplida sin
+perder turno (dos variantes), valet feliz completo, valet con errores de orden/validación y determinismo del guion.
+
+### B — Motor del valet del operador
+`valetAceptar(placa, operador)` (`PAGADO → ACEPTADO`, rechaza a un segundo operador), `valetEntregar` ahora exige
+`ACEPTADO`, `valetInspeccionar` con `fotos` como arreglo de hasta 4 `{vista, dataUrl}` (valida vista, prefijo
+`data:image/` y ≤ 300 000 caracteres), `valetRegistrarUbicacion(placa, {nota})` (solo `ESTACIONADO`, nota ≤ 140,
+evento `VALET_UBICACION`) y `valetListar()` con `ubicacion`, `preferencia` y `preferenciaCumplida` (sin `pin`).
+
+### B — Vista "Valet (operador)"
+`src/ui/valet-operador.js`: selector "Soy: Carlos Restrepo / Luisa Mejía / Andrés Gil", bandeja **Por aceptar**,
+ficha con stepper de 5 pasos (Aceptar → Recibir → Estacionar → Ubicación y llaves → Entregar con PIN),
+**fotos reales** (`<input type=file accept="image/*" capture="environment">` reducidas a 480 px / JPEG 0.7 en
+`<canvas>`, miniaturas con "Quitar" y botón **"Usar foto de ejemplo"** que dibuja la vista + la placa en canvas),
+"dónde quedó" con mapa (`App.mapas.hueco`, sin tocar `mapa.js`), casillero, nota y **Guardar ubicación**, y entrega
+con PIN. Errores del motor en rojo, éxitos en verde.
+
+### C — Lado del estudiante (`valet.js`)
+Tarjeta del operador con **avatar SVG de iniciales** (color derivado del nombre, sin fotos de personas), "Valet
+EAFIT Movilidad · verificado", "★ 4.9 · Caseta Valet · Ext. #4500"; "Buscando un operador…" mientras está `PAGADO`;
+ticket, operador y tarifa reales; inspección con **miniaturas** ampliables en modal accesible (`role=dialog`,
+cierre por clic/botón, foco al abrir); bloque **"Dónde quedó tu carro"** (parqueadero, celda, nota, casillero,
+mapa); PIN grande con "Muéstralo al operador del valet"; `ORDEN_VALET`/`EN_ENTREGA` con `ACEPTADO`, `EN_TRASLADO`
+y `LISTO_EN_BAHIA`.
+
+### D — Preferencia de parqueadero / celda
+Motor: `llegar({..., preferencia: {zona, celdaId}})` valida zona, celda existente y tipo; `elegirCelda` cumple
+`celdaId` → zona (más cercana dentro de la zona) → más cercana general, **sin alterar el orden FIFO**; guarda
+`preferenciaCumplida: 'celda' | 'zona' | 'no'`. UI: selector "Parqueadero preferido" en el formulario de Inicio,
+chip con la celda preferida y su "quitar", la frase de justicia y el texto en Mi turno.
+
+### Verificación §5 (al congelar, 15:56)
+
+| # | Punto | Resultado |
+|---|---|---|
+| 1 | `engine.test.js` + `casos.test.js` | ✅ 17/17 y 18/18 |
+| 2 | Doble clic, sin internet, consola limpia | ✅ `window.__errs` vacío en las tres vistas |
+| 3 | Recorrido demo estudiante ↔ operador | ✅ verificado por partes: aceptar → recibir → fotos de ejemplo → inspección guardada con 2 fotos; ficha del estudiante con operador, avatar, ticket y tarifa. ⏳ no se hizo el clic completo con subida de archivo real (la sesión de prueba no tiene cámara) ni la entrega final en la misma corrida |
+| 4 | Preferencia de Idiomas / celda libre | ✅ el formulario guarda la preferencia y el motor la aplica (casos 11–13, 18); en la demo `LAU321` entró a la cola externa, así que aún no había celda que asignar |
+| 5 | Flujo sin valet | ✅ 17 pruebas previas + `operacion.js`/`mapa.js` sin cambios |
+
+**Pendientes / desviaciones**
+- Falta el botón **"Preferir esta celda"** dentro del mapa de Inicio: requiere enganchar la selección de celda de
+  `mapa.js` (archivo que no debía tocarse); quedó el selector de parqueadero y el chip de celda preferida.
+- `tests/casos.json` usa un constructor de datos propio del runner (celdas de carro en `A-*`, otra zona `I-*` y
+  motos `M-*`) para mantener los casos legibles; `"datos": "demo"` usa el juego real de 624 celdas.
+- El estado `ACEPTADO` obligó a actualizar las pruebas 8, 15, 16 y 17 (ahora llaman `valetAceptar` antes de
+  `valetEntregar`).

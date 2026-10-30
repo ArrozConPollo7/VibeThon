@@ -76,3 +76,17 @@ Por cada prompt relevante, completar:
 - **Corrección del prompt:** la tarea; además se agregó el botón "Recibir vehículo" (sin él la inspección no tenía
   por dónde empezar) y el mensaje de resultado por acción.
 - **Cómo verificamos:** §4 de la tarea (17/17, `file://`, flujo estudiante→operador→PIN con `LAU123`/`I-040`).
+
+## Prompt 10 — Valet completo, preferencias y casos JSON
+- **Herramienta:** Hermes (DeepSeek)
+- **Objetivo:** operador del valet de punta a punta, información para el estudiante y preferencia de celda sin
+  romper la justicia; evidencia de calidad con casos JSON.
+- **Prompt usado:** `docs/TAREA_10_HERMES_VALET_COMPLETO.md`.
+- **Resultado / fallo observado:** el valet de Stitch prometía fotos, ubicación y PIN sin respaldo en el motor; el
+  operador no existía como rol (nadie "aceptaba" el servicio). Al ejecutar, los casos JSON destaparon dos errores
+  propios: el runner no validaba nombres de conductor de una letra y una placa de caso (`PAS05`) no cumplía el
+  formato.
+- **Corrección del prompt:** la tarea; en el código, `fotos` pasó de número a arreglo de imágenes y hubo que
+  actualizar las pruebas 8/15/16/17 por el estado `ACEPTADO`.
+- **Cómo verificamos:** `node tests/engine.test.js` (17/17), `node tests/casos.test.js` (18/18) y recorrido en
+  `index.html` con `file://` (ver §5 en STATUS).
