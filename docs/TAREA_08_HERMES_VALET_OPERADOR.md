@@ -30,6 +30,9 @@ Estados finales del valet: `SELECCIONADO, PAGADO, ENTREGADO_A_VALET, EN_FILA, ES
 17. `valetListar()` no expone el PIN y muestra celda + casillero del carro estacionado.
 Corre `node tests/engine.test.js` → 17/17 antes de tocar la UI.
 
+> **Referencia extra de Stitch para el valet:** `stitch_parkeafit_campus_parking_app/code.html` + `screen.png` (misma pantalla que `design/03-valet.html`, con captura). Úsala para el lado del estudiante (ticket, operador, inspección digital, caja de llaves, punto de entrega con tiempo estimado) y como base visual de la vista del operador.
+> **Claude Code trabaja en paralelo en TAREA_09** (`mapa.js`, `inicio.js`, `turno.js`, `operacion.js`, `styles.css`): no edites esos archivos; si necesitas el mapa, usa `App.mapas.hueco(...)` tal como existe.
+
 ## 3. Frontend
 **3.1 Nueva vista "Valet (operador)"** — `src/ui/valet-operador.js` + entrada en el selector de vistas de `src/ui/app.js` (junto a "Portería y operación") y su `<script>` en `index.html`. Mismo estilo Stitch (componentes de `src/ui/componentes.js`, tokens de `DESIGN.md`).
 - **Columna izquierda — Servicios** agrupados por estado: Por recibir (PAGADO) · Recibidos/en fila · Estacionados · Solicitados/en traslado · Listos en bahía. Cada tarjeta: placa (`App.placaHTML`), conductor, ticket, tiempo en custodia.
