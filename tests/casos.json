@@ -118,7 +118,7 @@
         },
         "espera": {
           "ok": false,
-          "error": "La hora de clase debe ser posterior a la hora actual (07:20)."
+          "error": "La hora de clase debe ser posterior a tu hora de llegada (07:20)."
         }
       }
     ]
@@ -1141,6 +1141,59 @@
           "placa": "PRE105",
           "celdaId": "A-02",
           "preferenciaCumplida": "no"
+        }
+      }
+    ]
+  },
+  {
+    "id": "19",
+    "titulo": "Llegada simulada a las 06:00 con clase a las 07:00",
+    "datos": "demo",
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "SIX001",
+          "conductor": "Madrugador",
+          "acceso": "CALLE4",
+          "horaLlegada": 360,
+          "horaClase": 420
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "SIX001",
+          "registradoEn": 360,
+          "acceso": "CALLE4",
+          "estado": "CELDA_ASIGNADA"
+        }
+      }
+    ]
+  },
+  {
+    "id": "20",
+    "titulo": "Segunda entrada del Principal: cada acceso tiene su propia fila",
+    "datos": "demo",
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "CLX001",
+          "conductor": "Ana",
+          "acceso": "CALLE4"
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "CLX001",
+          "acceso": "CALLE4",
+          "estado": "CELDA_ASIGNADA"
         }
       }
     ]

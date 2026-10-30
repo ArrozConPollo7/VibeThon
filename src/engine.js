@@ -11,6 +11,7 @@
   var MINUTOS_CAMINATA = 5;    // de la celda al salón
   var MINUTOS_HASTA_CELDA = 2; // recorrido portería → celda
   var CASILLEROS = 30;
+  var MINUTOS_EN_CAMPUS_TRAS_SALIR = 5;   // tras salir, el carro se retira del sistema (ya va por la vía)
   var OPERADORES_VALET = ['Carlos Restrepo', 'Luisa Mejía', 'Andrés Gil'];
   var COMBUSTIBLES = ['vacío', '1/4', '1/2', '3/4', 'lleno'];
   var TARIFA_VALET = 8000;
@@ -51,6 +52,12 @@
 
     // --- utilidades internas -------------------------------------------
     function capacidad() { return datosBase.capacidadPasarela || 4; }
+    function nombresAcceso() { return Object.keys(datosBase.accesos || {}); }
+    function filasVacias() {
+      var pasarelas = {}, afuera = {};
+      nombresAcceso().forEach(function (a) { pasarelas[a] = []; afuera[a] = []; });
+      return { pasarelas: pasarelas, afuera: afuera };
+    }
     function nombreAcceso(acceso) {
       var a = datosBase.accesos[acceso];
       return a && a.nombre ? a.nombre : acceso;
@@ -113,12 +120,13 @@
 
     // --- estado --------------------------------------------------------
     function reiniciarEstado() {
+      var filas = filasVacias();
       state = {
         clock: datosBase.relojInicial,
         celdas: clonar(datosBase.celdas),
         vehiculos: [],
-        pasarelas: { REGIONAL: [], LAS_VEGAS: [] },
-        afuera: { REGIONAL: [], LAS_VEGAS: [] },
+        pasarelas: filas.pasarelas,
+        afuera: filas.afuera,
         seq: 0,
         contadorVehiculo: 0,
         contadorValet: 0,
@@ -169,9 +177,9 @@
     }
 
     // --- reglas de fila (R1, R2) ---------------------------------------
-    function entrarAPasarela(v) {
+    function entrarAPasarela(v, horaRegistro) {
       v.estado = 'EN_PASARELA';
-      v.registradoEn = state.clock;
+      v.registradoEn = horaRegistro != null ? horaRegistro : state.clock;
       v.seq = ++state.seq;
       state.pasarelas[v.acceso].push(v.id);
       pushEvento('REGISTRO', v.placa + ' registró su llegada en ' + nombreAcceso(v.acceso) +
@@ -179,9 +187,9 @@
         { placa: v.placa, acceso: v.acceso, registradoEn: v.registradoEn, seq: v.seq });
     }
 
-    function registrarEnFila(v) {
+    function registrarEnFila(v, horaRegistro) {
       if (state.pasarelas[v.acceso].length < capacidad()) {
-        entrarAPasarela(v);
+        entrarAPasarela(v, horaRegistro);
       } else {
         state.afuera[v.acceso].push(v.id);
         pushEvento('LLEGADA_AFUERA', v.placa + ' espera afuera en ' + nombreAcceso(v.acceso) +
@@ -195,7 +203,8 @@
         var id = state.afuera[acceso].shift();
         var v = porId(id);
         if (!v) continue;
-        entrarAPasarela(v);
+        // Conserva la hora real de llegada al acceso (importante si se simuló una entrada anterior).
+        entrarAPasarela(v, v.llegadaAfueraEn != null ? v.llegadaAfueraEn : state.clock);
       }
     }
 
@@ -359,7 +368,20 @@
 
       if (!placa) return fallo('La placa es obligatoria.');
       if (!tipo) return fallo('Placa inválida. Carro: ABC123 · Moto: ABC12D.');
-      if (!state.pasarelas[acceso]) return fallo('Acceso desconocido. Elige Regional o Las Vegas.');
+      if (!state.pasarelas[acceso]) {
+        return fallo('Acceso desconocido. Elige uno de los seis accesos del campus.');
+      }
+      // Hora de llegada simulada: permite registrar una entrada anterior (por ejemplo 06:00)
+      // sin mover el reloj. Se usa como hora de registro para el orden FIFO.
+      var horaLlegada = opciones.horaLlegada;
+      if (horaLlegada != null && horaLlegada !== '') {
+        horaLlegada = Number(horaLlegada);
+        if (!(horaLlegada >= 360 && horaLlegada <= state.clock)) {
+          return fallo('La hora de llegada debe estar entre 06:00 y la hora actual (' + horaTexto(state.clock) + ').');
+        }
+      } else {
+        horaLlegada = state.clock;
+      }
       var conductor = String(opciones.conductor == null ? '' : opciones.conductor).trim().replace(/\s+/g, ' ');
       if (conductor && !RE_NOMBRE.test(conductor)) {
         return fallo('Nombre inválido: usa solo letras y espacios (2 a 40 caracteres).');
@@ -368,7 +390,9 @@
       if (horaClase != null && horaClase !== '') {
         horaClase = Number(horaClase);
         if (!(horaClase >= 360 && horaClase <= 1320)) return fallo('La hora de clase debe estar entre 06:00 y 22:00.');
-        if (horaClase <= state.clock) return fallo('La hora de clase debe ser posterior a la hora actual (' + horaTexto(state.clock) + ').');
+        if (horaClase <= horaLlegada) {
+          return fallo('La hora de clase debe ser posterior a tu hora de llegada (' + horaTexto(horaLlegada) + ').');
+        }
       } else {
         horaClase = null;
       }
@@ -399,7 +423,7 @@
         tipo: tipo,
         acceso: acceso,
         estado: 'AFUERA',
-        llegadaAfueraEn: state.clock,
+        llegadaAfueraEn: horaLlegada,
         registradoEn: null,
         seq: null,
         saleSinEstacionar: !!opciones.saleSinEstacionar,
@@ -412,15 +436,16 @@
       };
       state.vehiculos.push(v);
 
-      pushEvento('LLEGADA_AFUERA', placa + ' llegó por ' + nombreAcceso(acceso) + '.',
-        { placa: placa, acceso: acceso });
+      pushEvento('LLEGADA_AFUERA', placa + ' llegó por ' + nombreAcceso(acceso) +
+        (horaLlegada < state.clock ? ' a las ' + horaTexto(horaLlegada) : '') + '.',
+        { placa: placa, acceso: acceso, horaLlegada: horaLlegada });
 
       if (opciones.valetPendiente) {
         // Vehículo de valet que todavía no se entrega: no entra a la fila.
         pushEvento('VALET_SELECCIONADO', placa + ' inició el servicio de valet (aún sin entrar a la fila).',
           { placa: placa });
       } else {
-        registrarEnFila(v);
+        registrarEnFila(v, horaLlegada);
       }
 
       asignarCeldas();
@@ -539,6 +564,7 @@
         }
         state.pasarelas[acceso].splice(0, 1);
         v.estado = 'SALIO';
+        v.salioEn = state.clock;
         pushEvento('SALE_SIN_ESTACIONAR', placa + ' salió sin estacionar desde ' + nombreAcceso(acceso) + '.',
           { placa: placa, acceso: acceso });
         promoverAfuera(acceso);
@@ -553,6 +579,7 @@
 
       var celda = liberarCelda(v);
       v.estado = 'SALIO';
+      v.salioEn = state.clock;
       registrarSalidaTasa(v.tipo || 'CARRO');
       pushEvento('SALIDA', placa + ' salió; ' + (celda ? 'celda ' + celda.id + ' libre.' : 'sin celda asociada.'),
         { placa: placa, celda: celda ? celda.id : null });
@@ -562,6 +589,41 @@
       asignarCeldas();
       notificar();
       return { ok: true };
+    }
+
+    // --- retiro de carros que ya salieron del campus -------------------
+    function salidos() {
+      return vehiculos().filter(function (v) { return v.estado === 'SALIO'; });
+    }
+
+    // Manual (panel de operación): retira del sistema todos los que ya salieron.
+    function retirarSalidos() {
+      var antes = vehiculos().length;
+      state.vehiculos = vehiculos().filter(function (v) { return v.estado !== 'SALIO'; });
+      var retirados = antes - state.vehiculos.length;
+      if (retirados) {
+        pushEvento('SALIDA_CAMPUS', retirados + ' vehículo(s) retirado(s) del sistema: ya salieron del campus.',
+          { retirados: retirados });
+        notificar();
+      }
+      return { ok: true, retirados: retirados, enSistema: state.vehiculos.length };
+    }
+
+    // Automático (reloj): los que salieron hace 5 min o más ya van por la vía y no se muestran.
+    function purgarSalidos() {
+      var retirados = 0;
+      state.vehiculos = vehiculos().filter(function (v) {
+        if (v.estado !== 'SALIO') return true;
+        var desde = v.salioEn != null ? v.salioEn : 0;
+        if (state.clock - desde < MINUTOS_EN_CAMPUS_TRAS_SALIR) return true;
+        retirados++;
+        return false;
+      });
+      if (retirados) {
+        pushEvento('SALIDA_CAMPUS', retirados + ' vehículo(s) salieron del campus y se retiraron del sistema.',
+          { retirados: retirados });
+      }
+      return retirados;
     }
 
     // --- cálculos para la interfaz ------------------------------------
@@ -772,8 +834,8 @@
       var v = porPlaca(placa);
       if (!v) return fallo('Placa no registrada: ' + placa + '.');
       if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
-      if (v.valet.estado !== 'ENTREGADO_A_VALET' && v.valet.estado !== 'EN_FILA') {
-        return fallo('Solo se inspecciona al recibir el vehículo (estado ' + v.valet.estado + ').');
+      if (['ENTREGADO_A_VALET', 'EN_FILA', 'ESTACIONADO', 'LLAVES_EN_CUSTODIA'].indexOf(v.valet.estado) < 0) {
+        return fallo('Solo se inspecciona desde que recibes el vehículo (estado ' + v.valet.estado + ').');
       }
       var combustible = String(datos.combustible == null ? '' : datos.combustible).trim();
       if (COMBUSTIBLES.indexOf(combustible) < 0) {
@@ -1045,6 +1107,7 @@
         if (state.autoPorteria) porteriaAutomatica();
         llegadasACelda();
         devolucionesValet();
+        purgarSalidos();
         asignarCeldas();
       }
       if (modoDebug) verificarInvariantes();
@@ -1064,9 +1127,10 @@
     }
 
     function generarLlegada(acceso) {
+      var nombres = nombresAcceso();
       var acc = acceso && state.pasarelas[acceso]
         ? acceso
-        : (rng() < 0.5 ? 'REGIONAL' : 'LAS_VEGAS');
+        : nombres[Math.floor(rng() * nombres.length)];
       return llegar({
         placa: placaAleatoria(),
         conductor: CONDUCTORES[Math.floor(rng() * CONDUCTORES.length)],
@@ -1117,8 +1181,14 @@
         state.celdas = d.celdas;
         state.vehiculos = Array.isArray(d.vehiculos) ? d.vehiculos
           : Object.keys(d.vehiculos).map(function (k) { return d.vehiculos[k]; });
-        state.pasarelas = d.pasarelas;
-        state.afuera = d.afuera;
+        var filas = filasVacias();
+        state.pasarelas = filas.pasarelas;
+        state.afuera = filas.afuera;
+        Object.keys(d.pasarelas || {}).forEach(function (acceso) {
+          if (!state.pasarelas[acceso]) return;
+          state.pasarelas[acceso] = d.pasarelas[acceso] || [];
+          state.afuera[acceso] = (d.afuera && d.afuera[acceso]) || [];
+        });
         state.seq = d.seq;
         state.contadorVehiculo = d.contadorVehiculo || 0;
         state.contadorValet = d.contadorValet || 0;
@@ -1214,6 +1284,7 @@
       confirmarPorteria: confirmarPorteria,
       estacionar: estacionar,
       salir: salir,
+      retirarSalidos: retirarSalidos,
       posicion: posicion,
       estimarEspera: estimarEspera,
       llegoAClase: llegoAClase,

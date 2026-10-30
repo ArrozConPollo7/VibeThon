@@ -23,8 +23,13 @@
     <button data-accion="avanzar" data-min="30">+30 min</button>
     <button data-accion="reiniciar">Reiniciar</button>
     <button data-accion="generar" data-acceso="REGIONAL">Llegada aleatoria Regional</button>
+    <button data-accion="generar" data-acceso="CALLE4">Llegada aleatoria Calle 4 Sur</button>
     <button data-accion="generar" data-acceso="LAS_VEGAS">Llegada aleatoria Las Vegas</button>
+    <button data-accion="generar" data-acceso="CARRERA49">Llegada aleatoria Carrera 49</button>
+    <button data-accion="generar" data-acceso="GUAYABOS">Llegada aleatoria Guayabos</button>
+    <button data-accion="generar" data-acceso="LOMA">Llegada aleatoria Loma</button>
     <button data-accion="generar">Llegada aleatoria</button>
+    <button data-accion="retirarSalidos">Retirar carros que ya salieron</button>
     <button data-accion="invariantes">Verificar invariantes</button>
   </div>
 </fieldset>
@@ -36,9 +41,14 @@
   <label>Acceso
     <select id="f-acceso">
       <option value="REGIONAL">REGIONAL</option>
+      <option value="CALLE4">CALLE4</option>
       <option value="LAS_VEGAS">LAS_VEGAS</option>
+      <option value="CARRERA49">CARRERA49</option>
+      <option value="GUAYABOS">GUAYABOS</option>
+      <option value="LOMA">LOMA</option>
     </select>
   </label>
+  <label>Hora de llegada (HH:MM) <input id="f-llegada" size="6" placeholder="ahora"></label>
   <label>Hora de clase (HH:MM) <input id="f-clase" size="6" value="08:00"></label>
   <label><input type="checkbox" id="f-valet"> con valet</label>
   <label><input type="checkbox" id="f-sin"> sale sin estacionar</label>
@@ -122,6 +132,7 @@
     if (accion === 'avanzar') aviso(engine.avanzar(Number(boton.getAttribute('data-min'))));
     else if (accion === 'reiniciar') { aviso(engine.reiniciar()); }
     else if (accion === 'generar') aviso(engine.generarLlegada(boton.getAttribute('data-acceso') || undefined));
+    else if (accion === 'retirarSalidos') aviso(engine.retirarSalidos());
     else if (accion === 'invariantes') {
       try { engine.verificarInvariantes(); window.alert('✅ Invariantes válidos.'); }
       catch (e) { window.alert('❌ ' + e.message); }
@@ -130,6 +141,7 @@
         placa: $('f-placa').value,
         conductor: $('f-conductor').value,
         acceso: $('f-acceso').value,
+        horaLlegada: $('f-llegada').value ? minAHora($('f-llegada').value) : null,
         horaClase: minAHora($('f-clase').value),
         valet: $('f-valet').checked,
         saleSinEstacionar: $('f-sin').checked

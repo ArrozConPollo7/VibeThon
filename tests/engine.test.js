@@ -364,10 +364,14 @@ prueba('13. Motos: solo celdas M; una moto sin celda no bloquea a un carro', fun
   e2.verificarInvariantes();
 });
 
-prueba('14. Datos de la demo: Regional 4 en pasarela + 1 afuera; 60 min de guion sin romper invariantes', function () {
+prueba('14. Datos de la demo: dos entradas por parqueadero; 60 min de guion sin romper invariantes', function () {
   var e = ParkEngine.crear(ParkData);
-  assert.strictEqual(e.state.pasarelas.REGIONAL.length, 4);
+  assert.deepStrictEqual(Object.keys(e.state.pasarelas).sort(),
+    ['CALLE4', 'CARRERA49', 'GUAYABOS', 'LAS_VEGAS', 'LOMA', 'REGIONAL'],
+    'debe haber 6 accesos, dos por parqueadero');
+  assert.strictEqual(e.state.pasarelas.REGIONAL.length, 3);
   assert.strictEqual(e.state.afuera.REGIONAL.length, 1);
+  assert.strictEqual(e.state.pasarelas.CALLE4.length, 1, 'la segunda entrada del Principal tiene su propia fila');
   e.activarDebug(true);
   e.setAutoPorteria(true);
   e.avanzar(60);
@@ -479,6 +483,102 @@ prueba('17. valetListar(): sin PIN, con celda, parqueadero y casillero', functio
   // la lista es una copia: tocarla no cambia el motor
   item.casillero = 999;
   assert.notStrictEqual(e.valetListar()[0].casillero, 999);
+});
+
+prueba('18. Hora de llegada simulada (06:00) y clase posterior a la llegada', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2, iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02')] }));
+  var r = e.llegar({ placa: 'SIX123', conductor: 'Madrugador', acceso: 'REGIONAL', horaLlegada: 360, horaClase: 405 });
+  assert.ok(r.ok, 'una llegada a las 06:00 es válida');
+  assert.strictEqual(r.vehiculo.registradoEn, 360, 'la hora de registro es la hora de llegada');
+  assert.strictEqual(e.posicion('SIX123').posicionGlobalCelda, 1);
+
+  e.avanzar(1);
+  e.llegar({ placa: 'LTE123', conductor: 'Tarde', acceso: 'LAS_VEGAS' });
+  assert.strictEqual(e.posicion('SIX123').posicionGlobalCelda, 1, 'el de las 06:00 conserva el primer turno');
+  assert.strictEqual(e.posicion('LTE123').posicionGlobalCelda, 2);
+
+  e.salir('AAA111');
+  var de = function (placa) { return e.state.vehiculos.filter(function (x) { return x.placa === placa; })[0]; };
+  assert.ok(de('SIX123').celdaId, 'la primera celda es para quien llegó a las 06:00');
+  assert.strictEqual(de('LTE123').celdaId, null);
+
+  assert.strictEqual(e.llegar({ placa: 'FUT123', conductor: 'Ana', acceso: 'REGIONAL', horaLlegada: 500 }).ok, false,
+    'no se puede registrar una llegada futura');
+  assert.strictEqual(e.llegar({ placa: 'OLD123', conductor: 'Ana', acceso: 'REGIONAL', horaLlegada: 300 }).ok, false,
+    'la llegada no puede ser antes de las 06:00');
+  assert.strictEqual(e.llegar({ placa: 'CLS123', conductor: 'Ana', acceso: 'REGIONAL', horaLlegada: 360, horaClase: 360 }).ok, false,
+    'la clase debe ser posterior a la llegada');
+});
+
+prueba('19. Retiro manual de carros que ya salieron del campus', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2, iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02')] }));
+  e.llegar({ placa: 'RET123', conductor: 'Ana', acceso: 'REGIONAL' });
+  e.salir('AAA111');
+  var v = e.state.vehiculos.filter(function (x) { return x.placa === 'RET123'; })[0];
+  assert.ok(v.celdaId, 'recibió la celda liberada');
+  e.confirmarPorteria('REGIONAL', 'RET123');
+  e.estacionar('RET123');
+  e.salir('RET123');
+  assert.strictEqual(v.estado, 'SALIO');
+  var r = e.retirarSalidos();
+  assert.strictEqual(r.retirados, 2, 'retira los dos carros que ya salieron');
+  assert.strictEqual(e.state.vehiculos.filter(function (x) { return x.placa === 'RET123'; }).length, 0);
+  assert.ok(e.llegar({ placa: 'RET123', conductor: 'Ana', acceso: 'REGIONAL' }).ok, 'la placa puede volver al campus');
+});
+
+prueba('20. Purga automática: 5 min después de salir el carro deja el sistema', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 1, iniciales: [parqueado('AAA111', 'A-01')] }));
+  e.llegar({ placa: 'AUT123', conductor: 'Ana', acceso: 'REGIONAL' });
+  e.salir('AAA111');
+  e.confirmarPorteria('REGIONAL', 'AUT123');
+  e.estacionar('AUT123');
+  e.avanzar(1);
+  e.salir('AUT123');
+  e.avanzar(4);
+  assert.strictEqual(e.state.vehiculos.filter(function (x) { return x.placa === 'AUT123'; }).length, 1,
+    'a los 4 min todavía aparece saliendo');
+  e.avanzar(1);
+  assert.strictEqual(e.state.vehiculos.filter(function (x) { return x.placa === 'AUT123'; }).length, 0,
+    'a los 5 min ya salió del campus');
+});
+
+prueba('21. Dos entradas del mismo parqueadero: FIFO justo y cero celdas duplicadas', function () {
+  var base = datos({ nCeldas: 1, iniciales: [parqueado('AAA111', 'A-01')] });
+  base.accesos.NORTE = { nombre: 'Norte', x: 50, y: 10, porteria: { x: 50, y: 10 } };
+  var e = ParkEngine.crear(base);
+  assert.ok(e.llegar({ placa: 'NRT111', conductor: 'Uno', acceso: 'NORTE' }).ok);
+  e.avanzar(1);
+  assert.ok(e.llegar({ placa: 'REG111', conductor: 'Dos', acceso: 'REGIONAL' }).ok);
+  e.salir('AAA111');
+  var de = function (placa) { return e.state.vehiculos.filter(function (x) { return x.placa === placa; })[0]; };
+  assert.ok(de('NRT111').celdaId, 'la celda va para el primero, sin importar la entrada');
+  assert.strictEqual(de('REG111').celdaId, null, 'el segundo de la fila no adelanta');
+  e.verificarInvariantes();
+  var porPlaca = {};
+  e.state.celdas.forEach(function (c) {
+    if (!c.placa) return;
+    assert.ok(!porPlaca[c.placa], 'la placa ' + c.placa + ' no puede ocupar dos celdas');
+    porPlaca[c.placa] = true;
+  });
+});
+
+prueba('22. Valet: se puede completar el acta después de estacionar', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2, iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02')] }));
+  e.llegar({ placa: 'VAL123', conductor: 'Ana', acceso: 'REGIONAL', valet: true });
+  e.valetSeleccionar('VAL123');
+  e.valetPagar('VAL123', 'TARJETA');
+  e.valetAceptar('VAL123', 'Luisa Mejía');
+  e.valetEntregar('VAL123');
+  e.salir('AAA111');
+  assert.ok(e.valetListar()[0].celdaId, 'recibió celda');
+  e.confirmarPorteria('REGIONAL', 'VAL123');
+  e.estacionar('VAL123');
+  var item = e.valetListar()[0];
+  assert.strictEqual(item.estado, 'LLAVES_EN_CUSTODIA');
+  var foto = { vista: 'Frontal', dataUrl: 'data:image/jpeg;base64,AAAA' };
+  var r = e.valetInspeccionar('VAL123', { combustible: '1/2', km: 40000, novedades: 'Rayón leve', fotos: [foto] });
+  assert.ok(r.ok, 'la inspección se guarda con el carro estacionado: ' + (r.error || ''));
+  assert.strictEqual(e.valetListar()[0].inspeccion.fotos.length, 1);
 });
 
 console.log('\n' + pasadas + '/' + total + ' pruebas pasaron');
