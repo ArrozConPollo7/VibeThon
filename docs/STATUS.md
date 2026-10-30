@@ -247,4 +247,4 @@ Recorrido automatizado en Chrome sobre `file://` y sin red: 29 de 29 comprobacio
 - La campana ahora funciona: muestra los eventos del conductor activo. El avatar es decorativo.
 - El QR no tiene la cuenta regresiva "anti-captura": el código es simulado y fijo por placa.
 - El aviso de producción del Tailwind local se filtra en `index.html`: sin eso, §7.1 no daría consola limpia.
-- Portería muestra el mapa con `focusLot` como pide §5; "Ruta completa" abre todo el campus cuando la ruta cruza parqueaderos.
+- Mi turno enfoca el parqueadero de la celda con `focusLot`, como pide §5; "Ruta completa" abre todo el campus cuando la ruta cruza parqueaderos.
