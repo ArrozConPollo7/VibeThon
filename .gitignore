@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+target/
+build/
+dist/
+.next/
+out/
+.gradle/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor / sistema
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs y temporales
+*.log
+tmp/
+.cache/
