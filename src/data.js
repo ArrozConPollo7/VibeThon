@@ -14,7 +14,8 @@
   var ZONAS = {
     A: { nombre: 'Zona A', x: 15 },
     B: { nombre: 'Zona B', x: 50 },
-    C: { nombre: 'Zona C', x: 84 }
+    C: { nombre: 'Zona C', x: 84 },
+    M: { nombre: 'Zona M (motos)', x: 50 }
   };
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -28,13 +29,17 @@
     var i;
 
     for (i = 0; i < 20; i++) {
-      celdas.push({ id: 'A-' + pad2(i + 1), zona: 'A', x: xsA[i % 4], y: ysA[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
+      celdas.push({ id: 'A-' + pad2(i + 1), zona: 'A', tipo: 'CARRO', x: xsA[i % 4], y: ysA[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
     }
     for (i = 0; i < 12; i++) {
-      celdas.push({ id: 'B-' + pad2(i + 1), zona: 'B', x: xsB[i % 3], y: ysB[Math.floor(i / 3)], estado: 'LIBRE', placa: null });
+      celdas.push({ id: 'B-' + pad2(i + 1), zona: 'B', tipo: 'CARRO', x: xsB[i % 3], y: ysB[Math.floor(i / 3)], estado: 'LIBRE', placa: null });
     }
     for (i = 0; i < 8; i++) {
-      celdas.push({ id: 'C-' + pad2(i + 1), zona: 'C', x: xsC[i % 4], y: ysC[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
+      celdas.push({ id: 'C-' + pad2(i + 1), zona: 'C', tipo: 'CARRO', x: xsC[i % 4], y: ysC[Math.floor(i / 4)], estado: 'LIBRE', placa: null });
+    }
+    // Zona M: 10 celdas de moto en una franja al sur del centro.
+    for (i = 0; i < 10; i++) {
+      celdas.push({ id: 'M-' + pad2(i + 1), zona: 'M', tipo: 'MOTO', x: 37 + i * 3, y: 56, estado: 'LIBRE', placa: null });
     }
     return celdas;
   }
@@ -47,15 +52,20 @@
     'HJM345', 'KNP678'
   ];
 
-  var CELDAS_LIBRES = { 'A-07': true, 'A-15': true, 'B-03': true, 'B-11': true, 'C-02': true, 'C-06': true };
+  var PLACAS_MOTO_OCUPADAS = ['MTA12B', 'MTB34C', 'MTC56D', 'MTD78E', 'MTE90F', 'MTF11G', 'MTG22H'];
+
+  var CELDAS_LIBRES = {
+    'A-07': true, 'A-15': true, 'B-03': true, 'B-11': true, 'C-02': true, 'C-06': true,
+    'M-04': true, 'M-08': true, 'M-10': true
+  };
 
   function construirCeldas() {
     var celdas = generarCeldas();
-    var n = 0;
+    var n = 0, m = 0;
     celdas.forEach(function (c) {
-      if (CELDAS_LIBRES[c.id]) return;               // 6 libres
+      if (CELDAS_LIBRES[c.id]) return;               // carros: 6 libres · motos: 3 libres
       c.estado = 'OCUPADA';
-      c.placa = PLACAS_OCUPADAS[n++];                // 34 ocupadas
+      c.placa = c.tipo === 'MOTO' ? PLACAS_MOTO_OCUPADAS[m++] : PLACAS_OCUPADAS[n++];  // 34 + 7 ocupadas
     });
     return celdas;
   }
@@ -86,6 +96,7 @@
     return {
       placa: c.placa,
       conductor: CONDUCTORES[i % CONDUCTORES.length],
+      tipo: c.tipo,
       acceso: c.zona === 'A' ? 'REGIONAL' : (c.zona === 'C' ? 'LAS_VEGAS' : (i % 2 === 0 ? 'REGIONAL' : 'LAS_VEGAS')),
       estado: 'ESTACIONADO',
       celdaId: c.id,
@@ -93,14 +104,15 @@
     };
   });
 
-  // Pasarelas: REGIONAL 3 + 1 afuera, LAS_VEGAS 2. Registros mezclados 07:20–07:29.
+  // Pasarelas: REGIONAL 4 + 1 afuera, LAS_VEGAS 2. Registros mezclados 07:20–07:29.
   var EN_FILA = [
     { placa: 'RGL201', conductor: 'Ana Gómez', acceso: 'REGIONAL', estado: 'EN_PASARELA', registradoEn: 440, horaClase: 470 },
     { placa: 'LVG202', conductor: 'Carlos Ruiz', acceso: 'LAS_VEGAS', estado: 'EN_PASARELA', registradoEn: 441, horaClase: 475 },
     { placa: 'RGL203', conductor: 'Diana Pérez', acceso: 'REGIONAL', estado: 'EN_PASARELA', registradoEn: 443, horaClase: 465 },
     { placa: 'LVG204', conductor: 'Elena Mora', acceso: 'LAS_VEGAS', estado: 'EN_PASARELA', registradoEn: 445, horaClase: 480 },
     { placa: 'RGL205', conductor: 'Felipe Ortiz', acceso: 'REGIONAL', estado: 'EN_PASARELA', registradoEn: 447, horaClase: 472 },
-    { placa: 'RGL206', conductor: 'Gina Salas', acceso: 'REGIONAL', estado: 'AFUERA', llegadaAfueraEn: 448, horaClase: 478 }
+    { placa: 'RGL206', conductor: 'Gina Salas', acceso: 'REGIONAL', estado: 'EN_PASARELA', registradoEn: 448, horaClase: 478 },
+    { placa: 'RGL207', conductor: 'Hugo Vélez', acceso: 'REGIONAL', estado: 'AFUERA', llegadaAfueraEn: 449, horaClase: 485 }
   ];
 
   var VEHICULOS_INICIALES = PARQUEADOS.concat(EN_FILA);
@@ -131,6 +143,9 @@
     // Un carro que sale sin estacionar (marcado al llegar)
     { t: 470, tipo: 'LLEGADA', placa: 'SNX789', conductor: 'Ana Gómez', acceso: 'REGIONAL', saleSinEstacionar: true, horaClase: 473 },
     { t: 470, tipo: 'SALIDA', placa: placaEnCelda('A-13') },
+    // Dos motos: van a la Zona M y no frenan a los carros
+    { t: 460, tipo: 'LLEGADA', placa: 'MOT12A', conductor: 'Sara Naranjo', acceso: 'LAS_VEGAS', horaClase: 480 },
+    { t: 467, tipo: 'LLEGADA', placa: 'MOT34B', conductor: 'Tomás Arango', acceso: 'REGIONAL', horaClase: 490 },
     { t: 471, tipo: 'LLEGADA', placa: 'TRX115', conductor: 'Carlos Ruiz', acceso: 'LAS_VEGAS', horaClase: 484 },
     // Un carro con valet
     { t: 472, tipo: 'LLEGADA', placa: 'VLT001', conductor: 'Diana Pérez', acceso: 'LAS_VEGAS', valet: true, horaClase: 478 },
@@ -155,23 +170,12 @@
   ].sort(function (a, b) { return a.t - b.t; }); // orden estable en Node/Chrome modernos
 
   // --- Perfil histórico (inventado, fuente simulada) --------------------
-  var HISTORICO = [
-    { hora: 6, ocupacionPct: 12, salidasPorMin: 0.15 },
-    { hora: 7, ocupacionPct: 45, salidasPorMin: 0.40 },
-    { hora: 8, ocupacionPct: 82, salidasPorMin: 0.50 },
-    { hora: 9, ocupacionPct: 74, salidasPorMin: 0.45 },
-    { hora: 10, ocupacionPct: 61, salidasPorMin: 0.30 },
-    { hora: 11, ocupacionPct: 58, salidasPorMin: 0.28 },
-    { hora: 12, ocupacionPct: 76, salidasPorMin: 0.42 },
-    { hora: 13, ocupacionPct: 79, salidasPorMin: 0.45 },
-    { hora: 14, ocupacionPct: 68, salidasPorMin: 0.35 },
-    { hora: 15, ocupacionPct: 41, salidasPorMin: 0.18 },
-    { hora: 16, ocupacionPct: 33, salidasPorMin: 0.14 },
-    { hora: 17, ocupacionPct: 47, salidasPorMin: 0.25 },
-    { hora: 18, ocupacionPct: 29, salidasPorMin: 0.12 },
-    { hora: 19, ocupacionPct: 12, salidasPorMin: 0.06 },
-    { hora: 20, ocupacionPct: 5, salidasPorMin: 0.03 }
-  ].map(function (f) { return { hora: f.hora, ocupacionPct: f.ocupacionPct, salidasPorMin: f.salidasPorMin, fuente: 'simulado' }; });
+  // Forma fijada en TAREA_01B §2: mapas hora → valor.
+  var HISTORICO = {
+    fuente: 'simulado',
+    ocupacion: { 6: 15, 7: 80, 8: 95, 9: 88, 10: 70, 11: 66, 12: 86, 13: 90, 14: 74, 15: 42, 16: 35, 17: 50, 18: 30, 19: 14, 20: 6 },
+    salidasPorMin: { 6: 0.15, 7: 0.40, 8: 0.50, 9: 0.45, 10: 0.30, 11: 0.28, 12: 0.42, 13: 0.45, 14: 0.35, 15: 0.18, 16: 0.14, 17: 0.25, 18: 0.12, 19: 0.06, 20: 0.03 }
+  };
 
   var ParkData = {
     relojInicial: RELOJ_INICIAL,

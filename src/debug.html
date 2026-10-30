@@ -157,7 +157,7 @@
   });
 
   $('autoPorteria').addEventListener('change', function () {
-    engine.state.autoPorteria = this.checked;
+    engine.setAutoPorteria(this.checked);
     render();
   });
 
@@ -196,12 +196,12 @@
     Object.keys(engine.state.pasarelas).forEach(function (acceso) {
       html += '<h3>' + esc(acceso) + ' — pasarela (' + engine.state.pasarelas[acceso].length + '/4)</h3><ol>';
       engine.state.pasarelas[acceso].forEach(function (id) {
-        var v = engine.state.vehiculos[id];
+        var v = engine.state.vehiculos.filter(function (x) { return x.id === id; })[0];
         html += '<li>' + esc(v.placa) + ' — ' + esc(v.estado) + ' — ' + esc(v.celdaId || 'sin celda') + '</li>';
       });
       html += '</ol><strong>Afuera (' + engine.state.afuera[acceso].length + ')</strong><ol>';
       engine.state.afuera[acceso].forEach(function (id) {
-        var v = engine.state.vehiculos[id];
+        var v = engine.state.vehiculos.filter(function (x) { return x.id === id; })[0];
         html += '<li>' + esc(v.placa) + ' — esperando registro desde ' + ParkEngine.horaTexto(v.llegadaAfueraEn) + '</li>';
       });
       html += '</ol>';

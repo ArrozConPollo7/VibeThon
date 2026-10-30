@@ -11,6 +11,14 @@
   var MINUTOS_CAMINATA = 5;    // de la celda al salón
   var MINUTOS_HASTA_CELDA = 2; // recorrido portería → celda
   var CASILLEROS = 30;
+  var RE_CARRO = /^[A-Z]{3}[0-9]{3}$/;
+  var RE_MOTO = /^[A-Z]{3}[0-9]{2}[A-Z]$/;
+  var RE_NOMBRE = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,40}$/;
+  var TIPOS = ['CARRO', 'MOTO'];
+
+  function normalizarPlaca(placa) { return String(placa || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  function tipoDePlaca(placa) { return RE_CARRO.test(placa) ? 'CARRO' : (RE_MOTO.test(placa) ? 'MOTO' : null); }
+  function tasaVacia() { return { ewma: null, ultimaEn: null, muestras: 0 }; }
 
   var CONDUCTORES = [
     'Ana Gómez', 'Carlos Ruiz', 'Diana Pérez', 'Elena Mora', 'Felipe Ortiz',
@@ -45,7 +53,13 @@
       return a && a.nombre ? a.nombre : acceso;
     }
     function vehiculos() {
-      return Object.keys(state.vehiculos).map(function (id) { return state.vehiculos[id]; });
+      return state.vehiculos;
+    }
+    function porId(id) {
+      for (var i = 0; i < state.vehiculos.length; i++) {
+        if (state.vehiculos[i].id === id) return state.vehiculos[i];
+      }
+      return null;
     }
     function porPlaca(placa) {
       var lista = vehiculos();
@@ -61,7 +75,8 @@
       return null;
     }
     function celdaDe(v) { return v && v.celdaId ? celdaPorId(v.celdaId) : null; }
-    function libres() {
+    function libres(tipo) {
+      if (tipo) return libres().filter(function (c) { return (c.tipo || 'CARRO') === tipo; });
       return state.celdas.filter(function (c) { return c.estado === 'LIBRE'; });
     }
     function enPasarela(v) { return state.pasarelas[v.acceso].indexOf(v.id) >= 0; }
@@ -98,7 +113,7 @@
       state = {
         clock: datosBase.relojInicial,
         celdas: clonar(datosBase.celdas),
-        vehiculos: {},
+        vehiculos: [],
         pasarelas: { REGIONAL: [], LAS_VEGAS: [] },
         afuera: { REGIONAL: [], LAS_VEGAS: [] },
         seq: 0,
@@ -107,9 +122,9 @@
         eventos: [],
         asignaciones: [],
         autoPorteria: false,
-        tasaSalidas: { ewma: null, ultimaEn: null, muestras: 0 },
+        tasaSalidas: { CARRO: tasaVacia(), MOTO: tasaVacia() },
         semilla: datosBase.semilla || 20261030,
-        historico: datosBase.historico || []
+        historico: datosBase.historico || { fuente: 'simulado', ocupacion: {}, salidasPorMin: {} }
       };
       iniciarRng(state.semilla);
 
@@ -140,7 +155,8 @@
         horaClase: d.horaClase != null ? d.horaClase : null,
         etaCelda: null
       };
-      state.vehiculos[v.id] = v;
+      v.tipo = d.tipo || tipoDePlaca(v.placa) || 'CARRO';
+      state.vehiculos.push(v);
       if (v.estado === 'EN_PASARELA' || v.estado === 'CELDA_ASIGNADA') {
         state.pasarelas[v.acceso].push(v.id);
       } else if (v.estado === 'AFUERA') {
@@ -174,7 +190,7 @@
     function promoverAfuera(acceso) {
       while (state.pasarelas[acceso].length < capacidad() && state.afuera[acceso].length) {
         var id = state.afuera[acceso].shift();
-        var v = state.vehiculos[id];
+        var v = porId(id);
         if (!v) continue;
         entrarAPasarela(v);
       }
@@ -231,20 +247,27 @@
         }).sort(function (a, b) {
           return (a.registradoEn - b.registradoEn) || (a.seq - b.seq);
         });
-        var disponibles = libres();
-        if (!candidatos.length || !disponibles.length) break;
-        reservarCelda(candidatos[0], elegirCelda(candidatos[0], disponibles));
+        // FIFO global dentro de cada tipo: el primero (por hora de registro) que tenga
+        // celdas libres de su tipo recibe la suya; una moto sin celda no frena a un carro.
+        var elegido = null, disponibles = null;
+        for (var i = 0; i < candidatos.length; i++) {
+          var d = libres(candidatos[i].tipo || 'CARRO');
+          if (d.length) { elegido = candidatos[i]; disponibles = d; break; }
+        }
+        if (!elegido) break;
+        reservarCelda(elegido, elegirCelda(elegido, disponibles));
         total++;
       }
       return total;
     }
 
     // --- cola global de quienes necesitan celda -----------------------
-    function necesitanCeldaGlobal() {
+    function necesitanCeldaGlobal(tipo) {
       var registrados = [];
       var afuera = [];
       vehiculos().forEach(function (v) {
         if (v.saleSinEstacionar) return;
+        if (tipo && (v.tipo || 'CARRO') !== tipo) return;
         if (v.estado === 'EN_PASARELA' && !v.celdaId) registrados.push(v);
         else if (v.estado === 'AFUERA' && enAfuera(v)) afuera.push(v);
       });
@@ -256,24 +279,36 @@
     }
 
     function posicionGlobalCelda(v) {
-      var idx = necesitanCeldaGlobal().indexOf(v);
+      var idx = necesitanCeldaGlobal(v.tipo || 'CARRO').indexOf(v);
       return idx < 0 ? null : idx + 1;
     }
 
     // --- tasa de salidas (EWMA) ---------------------------------------
-    function tasaSalidasPorMin() {
-      var tasa = state.tasaSalidas.ewma;
-      if (tasa == null) {
-        var hora = Math.floor(state.clock / 60);
+    function historicoSalidas(hora) {
+      var h = state.historico || {};
+      if (Array.isArray(h)) {
         var fila = null;
-        (state.historico || []).forEach(function (f) { if (f.hora === hora) fila = f; });
-        tasa = fila ? fila.salidasPorMin : 0.1;
+        h.forEach(function (f) { if (f.hora === hora) fila = f; });
+        return fila ? fila.salidasPorMin : null;
+      }
+      return h.salidasPorMin && h.salidasPorMin[hora] != null ? h.salidasPorMin[hora] : null;
+    }
+
+    function tasaSalidasPorMin(tipo) {
+      tipo = tipo || 'CARRO';
+      var t = state.tasaSalidas[tipo] || tasaVacia();
+      var tasa = t.ewma;
+      if (tasa == null) {
+        var base = historicoSalidas(Math.floor(state.clock / 60));
+        tasa = base != null ? base : 0.1;
+        if (tipo === 'MOTO') tasa = tasa * 0.25;   // hay 4 veces menos celdas de moto
       }
       return Math.max(TASA_MINIMA, tasa);
     }
 
-    function registrarSalidaTasa() {
-      var t = state.tasaSalidas;
+    function registrarSalidaTasa(tipo) {
+      var t = state.tasaSalidas[tipo || 'CARRO'];
+      if (!t) t = state.tasaSalidas[tipo || 'CARRO'] = tasaVacia();
       if (t.ultimaEn != null && state.clock > t.ultimaEn) {
         var brecha = state.clock - t.ultimaEn;
         var muestra = 1 / brecha;              // salidas por minuto observadas
@@ -283,11 +318,12 @@
       t.ultimaEn = state.clock;
     }
 
-    function estimarParaK(k) {
-      var L = libres().length;
+    function estimarParaK(k, tipo) {
+      tipo = tipo || 'CARRO';
+      var L = libres(tipo).length;
       if (k <= L) return { minMin: 0, maxMin: 1, texto: 'Celda inmediata' };
       var faltan = k - L;
-      var tasa = tasaSalidasPorMin();
+      var tasa = tasaSalidasPorMin(tipo);
       var t = faltan / tasa;
       var minMin = Math.floor(t * 0.8);
       var maxMin = Math.ceil(t * 1.3);
@@ -298,11 +334,25 @@
     // --- acciones públicas -------------------------------------------
     function llegar(opciones) {
       opciones = opciones || {};
-      var placa = String(opciones.placa || '').trim().toUpperCase();
+      var placa = normalizarPlaca(opciones.placa);
       var acceso = opciones.acceso;
+      var tipo = tipoDePlaca(placa);
 
       if (!placa) return fallo('La placa es obligatoria.');
-      if (!state.pasarelas[acceso]) return fallo('Acceso desconocido: ' + acceso + '.');
+      if (!tipo) return fallo('Placa inválida. Carro: ABC123 · Moto: ABC12D.');
+      if (!state.pasarelas[acceso]) return fallo('Acceso desconocido. Elige Regional o Las Vegas.');
+      var conductor = String(opciones.conductor == null ? '' : opciones.conductor).trim().replace(/\s+/g, ' ');
+      if (conductor && !RE_NOMBRE.test(conductor)) {
+        return fallo('Nombre inválido: usa solo letras y espacios (2 a 40 caracteres).');
+      }
+      var horaClase = opciones.horaClase;
+      if (horaClase != null && horaClase !== '') {
+        horaClase = Number(horaClase);
+        if (!(horaClase >= 360 && horaClase <= 1320)) return fallo('La hora de clase debe estar entre 06:00 y 22:00.');
+        if (horaClase <= state.clock) return fallo('La hora de clase debe ser posterior a la hora actual (' + horaTexto(state.clock) + ').');
+      } else {
+        horaClase = null;
+      }
       var existente = porPlaca(placa);
       if (existente && existente.estado !== 'SALIO') {
         return fallo('La placa ' + placa + ' ya está en el sistema.');
@@ -311,7 +361,8 @@
       var v = {
         id: ++state.contadorVehiculo,
         placa: placa,
-        conductor: opciones.conductor || '—',
+        conductor: conductor || 'Conductor',
+        tipo: tipo,
         acceso: acceso,
         estado: 'AFUERA',
         llegadaAfueraEn: state.clock,
@@ -320,10 +371,10 @@
         saleSinEstacionar: !!opciones.saleSinEstacionar,
         celdaId: null,
         valet: opciones.valet ? { codigo: null, estado: 'SELECCIONADO', casillero: null, pagado: false } : null,
-        horaClase: opciones.horaClase != null ? opciones.horaClase : null,
+        horaClase: horaClase,
         etaCelda: null
       };
-      state.vehiculos[v.id] = v;
+      state.vehiculos.push(v);
 
       pushEvento('LLEGADA_AFUERA', placa + ' llegó por ' + nombreAcceso(acceso) + '.',
         { placa: placa, acceso: acceso });
@@ -466,7 +517,7 @@
 
       var celda = liberarCelda(v);
       v.estado = 'SALIO';
-      registrarSalidaTasa();
+      registrarSalidaTasa(v.tipo || 'CARRO');
       pushEvento('SALIDA', placa + ' salió; ' + (celda ? 'celda ' + celda.id + ' libre.' : 'sin celda asociada.'),
         { placa: placa, celda: celda ? celda.id : null });
       if (v.valet && v.valet.casillero) v.valet.casillero = null;
@@ -518,10 +569,11 @@
       var k = posicionGlobalCelda(v);
       if (k == null) return { minMin: null, maxMin: null, texto: 'Sin estimación disponible' };
 
-      var est = estimarParaK(k);
+      var est = estimarParaK(k, v.tipo || 'CARRO');
       est.k = k;
-      est.libres = libres().length;
-      est.tasa = redondear1(tasaSalidasPorMin());
+      est.tipo = v.tipo || 'CARRO';
+      est.libres = libres(est.tipo).length;
+      est.tasa = redondear1(tasaSalidasPorMin(est.tipo));
       return est;
     }
 
@@ -570,7 +622,7 @@
     }
 
     function resumen() {
-      var lista = necesitanCeldaGlobal();
+      var lista = necesitanCeldaGlobal('CARRO');
       var L = libres().length;
       var accesos = {};
       var justicia = {};
@@ -583,7 +635,7 @@
         // esperan afuera en ese acceso + él mismo.
         var registradosQueNecesitan = lista.filter(function (v) { return v.estado === 'EN_PASARELA'; }).length;
         var k = registradosQueNecesitan + 1 + afuera;
-        var est = estimarParaK(k);
+        var est = estimarParaK(k, 'CARRO');
 
         accesos[nombre] = {
           enPasarela: state.pasarelas[nombre].length,
@@ -614,6 +666,11 @@
         libres: L,
         total: total,
         ocupacionPct: total ? Math.round(((total - L) / total) * 100) : 0,
+        libresPorTipo: { CARRO: libres('CARRO').length, MOTO: libres('MOTO').length },
+        totalPorTipo: {
+          CARRO: state.celdas.filter(function (c) { return (c.tipo || 'CARRO') === 'CARRO'; }).length,
+          MOTO: state.celdas.filter(function (c) { return c.tipo === 'MOTO'; }).length
+        },
         accesos: accesos,
         justicia: justicia,
         historico: clonar(state.historico)
@@ -635,8 +692,8 @@
     function valetSeleccionar(placa, opciones) {
       opciones = opciones || {};
       var v = porPlaca(placa);
-      if (!v) {
-        if (!opciones.acceso) return fallo('Placa no registrada: ' + placa + '.');
+      if (!v || v.estado === 'SALIO') {
+        if (!opciones.acceso) return fallo('Primero registra tu llegada.');
         var creada = llegar({
           placa: placa,
           conductor: opciones.conductor,
@@ -704,6 +761,7 @@
         return fallo('El valet de ' + placa + ' todavía no tiene las llaves en custodia (estado ' + v.valet.estado + ').');
       }
       v.valet.estado = 'SOLICITADO';
+      v.valet.devolverEn = state.clock + MINUTOS_HASTA_CELDA;
       pushEvento('VALET_SOLICITADO', 'El cliente de ' + placa + ' solicitó su carro (casillero ' + v.valet.casillero + ').',
         { placa: placa, casillero: v.valet.casillero });
       notificar();
@@ -717,10 +775,15 @@
       if (v.valet.estado !== 'SOLICITADO') {
         return fallo('El carro de ' + placa + ' no está solicitado.');
       }
+      var casillero = v.valet.casillero;
+      v.valet.devolverEn = null;
+      if (v.estado === 'ESTACIONADO') {
+        salir(placa);                       // libera la celda; deja valet en DEVUELTO
+      }
       v.valet.estado = 'DEVUELTO';
-      pushEvento('VALET_DEVUELTO', 'Vehículo ' + placa + ' devuelto al cliente; se libera el casillero ' + v.valet.casillero + '.',
-        { placa: placa, casillero: v.valet.casillero });
       v.valet.casillero = null;
+      pushEvento('VALET_DEVUELTO', 'Vehículo ' + placa + ' devuelto al cliente; se libera el casillero ' + casillero + '.',
+        { placa: placa, casillero: casillero });
       notificar();
       return { ok: true };
     }
@@ -730,13 +793,22 @@
       Object.keys(state.pasarelas).forEach(function (acceso) {
         var id = state.pasarelas[acceso][0];
         if (id == null) return;
-        var v = state.vehiculos[id];
+        var v = porId(id);
         if (v && v.celdaId) confirmarPorteria(acceso, v.placa);
       });
     }
 
-    function llegadasACelda() {
+    function devolucionesValet() {
       vehiculos().forEach(function (v) {
+        if (v.valet && v.valet.estado === 'SOLICITADO' && v.valet.devolverEn != null &&
+            state.clock >= v.valet.devolverEn) {
+          valetDevolver(v.placa);
+        }
+      });
+    }
+
+    function llegadasACelda() {
+      vehiculos().slice().forEach(function (v) {
         if (v.estado === 'EN_RECORRIDO' && v.etaCelda != null && state.clock >= v.etaCelda) {
           estacionar(v.placa);
         }
@@ -751,7 +823,7 @@
             placa: ev.placa,
             conductor: ev.conductor,
             acceso: ev.acceso,
-            horaClase: ev.horaClase,
+            horaClase: ev.horaClase != null && ev.horaClase > state.clock ? ev.horaClase : null,
             valet: ev.valet,
             saleSinEstacionar: ev.saleSinEstacionar
           });
@@ -769,6 +841,7 @@
         ejecutarGuion();
         if (state.autoPorteria) porteriaAutomatica();
         llegadasACelda();
+        devolucionesValet();
         asignarCeldas();
       }
       if (modoDebug) verificarInvariantes();
@@ -839,7 +912,8 @@
         if (!d || !d.celdas || !d.vehiculos) throw new Error('El JSON no tiene el formato del motor.');
         state.clock = d.clock;
         state.celdas = d.celdas;
-        state.vehiculos = d.vehiculos;
+        state.vehiculos = Array.isArray(d.vehiculos) ? d.vehiculos
+          : Object.keys(d.vehiculos).map(function (k) { return d.vehiculos[k]; });
         state.pasarelas = d.pasarelas;
         state.afuera = d.afuera;
         state.seq = d.seq;
@@ -848,7 +922,7 @@
         state.eventos = d.eventos || [];
         state.asignaciones = d.asignaciones || [];
         state.autoPorteria = !!d.autoPorteria;
-        state.tasaSalidas = d.tasaSalidas || { ewma: null, ultimaEn: null, muestras: 0 };
+        state.tasaSalidas = d.tasaSalidas && d.tasaSalidas.CARRO ? d.tasaSalidas : { CARRO: tasaVacia(), MOTO: tasaVacia() };
         if (modoDebug) verificarInvariantes();
         notificar();
         return { ok: true };
@@ -907,6 +981,10 @@
         var celda = null;
         s.celdas.forEach(function (c) { if (c.id === v.celdaId) celda = c; });
         if (!celda) throw new Error('El vehículo ' + v.placa + ' apunta a la celda inexistente ' + v.celdaId + '.');
+        if ((celda.tipo || 'CARRO') !== (v.tipo || 'CARRO')) {
+          throw new Error('El vehículo ' + v.placa + ' (' + (v.tipo || 'CARRO') + ') tiene la celda ' + celda.id +
+            ' de tipo ' + (celda.tipo || 'CARRO') + '.');
+        }
         if ((celda.estado !== 'RESERVADA' && celda.estado !== 'OCUPADA') || celda.placa !== v.placa) {
           throw new Error('La celda ' + celda.id + ' del vehículo ' + v.placa +
             ' no está RESERVADA/OCUPADA con su placa.');
@@ -953,6 +1031,13 @@
       cargarLocal: cargarLocal,
       verificarInvariantes: verificarInvariantes,
       asignarCeldas: asignarCeldas,
+      setAutoPorteria: function (valor) {
+        state.autoPorteria = !!valor;
+        pushEvento('PORTERIA_AUTO', 'Portería automática ' + (state.autoPorteria ? 'activada.' : 'desactivada.'), {});
+        if (state.autoPorteria) porteriaAutomatica();
+        notificar();
+        return { ok: true, autoPorteria: state.autoPorteria };
+      },
       activarDebug: function (valor) { modoDebug = !!valor; return modoDebug; },
       politica: function () { return POLITICA_TEXTO; }
     };
@@ -968,6 +1053,8 @@
   var ParkEngine = {
     crear: crear,
     POLITICA_TEXTO: POLITICA_TEXTO,
+    normalizarPlaca: normalizarPlaca,
+    tipoDePlaca: tipoDePlaca,
     horaTexto: horaTexto
   };
 

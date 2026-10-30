@@ -75,11 +75,11 @@ prueba('1. FIFO global: la celda va por hora de registro, sin importar el acceso
     iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02'), parqueado('CCC333', 'A-03'), parqueado('DDD444', 'A-04')]
   }));
 
-  e.llegar({ placa: 'TRX100', conductor: 'R', acceso: 'REGIONAL' });   // 07:20
+  e.llegar({ placa: 'TRX100', conductor: 'Regional', acceso: 'REGIONAL' });   // 07:20
   e.avanzar(1);
-  e.llegar({ placa: 'TRX200', conductor: 'LV', acceso: 'LAS_VEGAS' }); // 07:21
+  e.llegar({ placa: 'TRX200', conductor: 'Las Vegas', acceso: 'LAS_VEGAS' }); // 07:21
   e.avanzar(2);
-  e.llegar({ placa: 'TRX300', conductor: 'R', acceso: 'REGIONAL' });   // 07:23
+  e.llegar({ placa: 'TRX300', conductor: 'Regional', acceso: 'REGIONAL' });   // 07:23
 
   assert.strictEqual(e.state.celdas.filter(function (c) { return c.estado === 'LIBRE'; }).length, 0,
     'no debe haber celdas libres antes de liberar cupos');
@@ -105,11 +105,11 @@ prueba('2. Orden por fila: nunca adelanta el de atrás', function () {
     iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02'), parqueado('CCC333', 'A-03'), parqueado('DDD444', 'A-04')]
   }));
 
-  e.llegar({ placa: 'FIL101', conductor: 'A', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'FIL101', conductor: 'Ana', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'FIL102', conductor: 'B', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'FIL102', conductor: 'Beto', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'FIL103', conductor: 'C', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'FIL103', conductor: 'Caro', acceso: 'REGIONAL' });
 
   e.salir('AAA111'); // 1 celda libre
   var v = function (placa) {
@@ -136,11 +136,11 @@ prueba('3. Sale sin estacionar: no recibe celda y conserva su puesto físico', f
       .filter(function (x) { return x.placa === placa; })[0];
   };
 
-  e.llegar({ placa: 'NEC101', conductor: 'A', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'NEC101', conductor: 'Ana', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'SNE102', conductor: 'B', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'SNE102', conductor: 'Beto', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'NEC103', conductor: 'C', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'NEC103', conductor: 'Caro', acceso: 'REGIONAL' });
 
   assert.strictEqual(e.marcarSaleSinEstacionar('SNE102', true).ok, true);
   assert.strictEqual(e.posicion('SNE102').posicionEnPasarela, 2, 'conserva su puesto en la fila');
@@ -164,19 +164,19 @@ prueba('3. Sale sin estacionar: no recibe celda y conserva su puesto físico', f
 prueba('4. Pasarela llena: el 5.º espera afuera y entra al liberarse un cupo', function () {
   var e = ParkEngine.crear(datos({ nCeldas: 2 }));
 
-  ['PAS01', 'PAS02', 'PAS03', 'PAS04', 'PAS05'].forEach(function (p) {
-    e.llegar({ placa: p, conductor: 'X', acceso: 'REGIONAL' });
+  ['PAS101', 'PAS102', 'PAS103', 'PAS104', 'PAS105'].forEach(function (p) {
+    e.llegar({ placa: p, conductor: 'Xime', acceso: 'REGIONAL' });
   });
 
   var quinto = Object.keys(e.state.vehiculos).map(function (k) { return e.state.vehiculos[k]; })
-    .filter(function (v) { return v.placa === 'PAS05'; })[0];
+    .filter(function (v) { return v.placa === 'PAS105'; })[0];
 
   assert.strictEqual(e.state.pasarelas.REGIONAL.length, 4, 'la pasarela admite 4');
   assert.strictEqual(e.state.afuera.REGIONAL.length, 1, 'el 5.º queda afuera');
   assert.strictEqual(quinto.estado, 'AFUERA');
   assert.strictEqual(quinto.registradoEn, null, 'no tiene hora de registro mientras espera afuera');
 
-  assert.strictEqual(e.confirmarPorteria('REGIONAL', 'PAS01').ok, true);
+  assert.strictEqual(e.confirmarPorteria('REGIONAL', 'PAS101').ok, true);
   assert.strictEqual(quinto.estado, 'EN_PASARELA', 'entra al liberarse el cupo');
   assert.strictEqual(quinto.registradoEn, e.state.clock, 'se registra en el minuto de entrada');
   assert.ok(quinto.seq > 0, 'recibe un seq nuevo');
@@ -185,7 +185,7 @@ prueba('4. Pasarela llena: el 5.º espera afuera y entra al liberarse un cupo', 
 
 prueba('5. Sin duplicados: 200 llegadas aleatorias con salidas, invariantes siempre válidas', function () {
   var e = ParkEngine.crear(datos({ nCeldas: 20 }));
-  e.state.autoPorteria = true;
+  e.setAutoPorteria(true);
 
   var i;
   for (i = 0; i < 200; i++) {
@@ -218,18 +218,18 @@ prueba('5. Sin duplicados: 200 llegadas aleatorias con salidas, invariantes siem
 prueba('6. Portería: errores claros y paso correcto', function () {
   var e = ParkEngine.crear(datos({ nCeldas: 3 }));
 
-  e.llegar({ placa: 'POR101', conductor: 'A', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'POR101', conductor: 'Ana', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'POR102', conductor: 'B', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'POR102', conductor: 'Beto', acceso: 'REGIONAL' });
 
   assert.strictEqual(e.confirmarPorteria('REGIONAL', 'ZZZ999').error, 'Placa no registrada en esta pasarela.');
   assert.strictEqual(e.confirmarPorteria('REGIONAL', 'POR102').error, 'Este vehículo aún no es el primero de la fila.');
   assert.strictEqual(e.confirmarPorteria('REGIONAL', 'POR101').ok, true);
-  assert.strictEqual(e.state.vehiculos[1].estado, 'EN_RECORRIDO');
+  assert.strictEqual(e.state.vehiculos.filter(function (v) { return v.placa === 'POR101'; })[0].estado, 'EN_RECORRIDO');
 
   // Sin celda asignada (no hay celdas libres)
   var e2 = ParkEngine.crear(datos({ nCeldas: 1, iniciales: [parqueado('OCC111', 'A-01')] }));
-  e2.llegar({ placa: 'SIN101', conductor: 'C', acceso: 'REGIONAL' });
+  e2.llegar({ placa: 'SIN101', conductor: 'Caro', acceso: 'REGIONAL' });
   assert.strictEqual(e2.confirmarPorteria('REGIONAL', 'SIN101').error, 'Aún no tiene celda asignada. Debe esperar.');
 });
 
@@ -239,9 +239,9 @@ prueba('7. Valet sin prioridad: compite con su hora de registro', function () {
     iniciales: [parqueado('AAA111', 'A-01'), parqueado('BBB222', 'A-02')]
   }));
 
-  e.llegar({ placa: 'NOR101', conductor: 'A', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'NOR101', conductor: 'Ana', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'VAL101', conductor: 'B', acceso: 'REGIONAL', valet: true });
+  e.llegar({ placa: 'VAL101', conductor: 'Beto', acceso: 'REGIONAL', valet: true });
   assert.strictEqual(e.valetPagar('VAL101', 'NEQUI').ok, true);
 
   e.salir('AAA111');
@@ -258,7 +258,7 @@ prueba('7. Valet sin prioridad: compite con su hora de registro', function () {
 
 prueba('8. Valet: pago obligatorio y flujo completo hasta LLAVES_EN_CUSTODIA', function () {
   var e = ParkEngine.crear(datos({ nCeldas: 2 }));
-  e.llegar({ placa: 'VLT101', conductor: 'A', acceso: 'REGIONAL', valet: true });
+  e.llegar({ placa: 'VLT101', conductor: 'Ana', acceso: 'REGIONAL', valet: true });
 
   assert.strictEqual(e.valetEntregar('VLT101').error, 'Primero completa el pago del valet.');
   assert.strictEqual(e.valetPagar('VLT101', 'RECHAZO').error, 'Pago rechazado. Intenta con otro método.');
@@ -280,7 +280,7 @@ prueba('9. Estimación: "Celda inmediata" con cupo y rango 4–8 min con tasa 0.
   // (a) parqueadero vacío con celdas libres: un carro nuevo entra de una
   var e0 = ParkEngine.crear(datos({ nCeldas: 3 }));
   assert.strictEqual(e0.resumen().accesos.REGIONAL.esperaTexto, 'Celda inmediata');
-  e0.llegar({ placa: 'ESP101', conductor: 'A', acceso: 'REGIONAL' });
+  e0.llegar({ placa: 'ESP101', conductor: 'Ana', acceso: 'REGIONAL' });
   assert.ok(e0.state.celdas.filter(function (c) { return c.estado === 'LIBRE'; }).length >= 1);
 
   // (b) k = 3 con L = 0 y tasa 0.5/min → faltan 3 → t = 6 min → 4–8
@@ -288,11 +288,11 @@ prueba('9. Estimación: "Celda inmediata" con cupo y rango 4–8 min con tasa 0.
     nCeldas: 1,
     iniciales: [parqueado('OCC111', 'A-01')]
   }));
-  e.state.tasaSalidas.ewma = 0.5;
-  e.llegar({ placa: 'EST101', conductor: 'A', acceso: 'REGIONAL' });
+  e.state.tasaSalidas.CARRO.ewma = 0.5;
+  e.llegar({ placa: 'EST101', conductor: 'Ana', acceso: 'REGIONAL' });
   e.avanzar(1);
-  e.llegar({ placa: 'EST102', conductor: 'B', acceso: 'REGIONAL' });
-  e.llegar({ placa: 'EST103', conductor: 'C', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'EST102', conductor: 'Beto', acceso: 'REGIONAL' });
+  e.llegar({ placa: 'EST103', conductor: 'Caro', acceso: 'REGIONAL' });
   var est = e.estimarEspera('EST103');
   assert.strictEqual(est.k, 3);
   assert.strictEqual(est.texto, '4\u20138 min');
@@ -309,6 +309,70 @@ prueba('10. Determinismo: dos motores con los mismos datos dan el mismo JSON', f
   b.avanzar(60);
   assert.strictEqual(a.state.clock, 510);
   assert.strictEqual(a.exportarJSON(), b.exportarJSON());
+});
+
+/* --- Pruebas TAREA 01B (validación y motos) — agregadas por Claude ------------------ */
+function datosMixtos(carrosLibres, motosLibres) {
+  var d = datos({ nCeldas: 0 });
+  d.celdas = [];
+  var i;
+  for (i = 0; i < carrosLibres; i++) d.celdas.push({ id: 'A-0' + (i + 1), zona: 'A', tipo: 'CARRO', x: 10 + i, y: 10, estado: 'LIBRE', placa: null });
+  for (i = 0; i < motosLibres; i++) d.celdas.push({ id: 'M-0' + (i + 1), zona: 'M', tipo: 'MOTO', x: 40 + i, y: 56, estado: 'LIBRE', placa: null });
+  d.zonas.M = { nombre: 'Zona M (motos)', x: 50 };
+  return d;
+}
+
+prueba('11. Placas: carro ABC123 y moto ABC12D; el resto se rechaza', function () {
+  var e = ParkEngine.crear(datosMixtos(5, 5));
+  assert.strictEqual(e.llegar({ placa: 'ABC123', conductor: 'Ana', acceso: 'REGIONAL' }).vehiculo.tipo, 'CARRO');
+  assert.strictEqual(e.llegar({ placa: 'ABC12D', conductor: 'Beto', acceso: 'REGIONAL' }).vehiculo.tipo, 'MOTO');
+  assert.strictEqual(e.llegar({ placa: 'abc 124', conductor: 'Caro', acceso: 'LAS_VEGAS' }).vehiculo.placa, 'ABC124');
+  ['AB1234', 'ABC1234', '123ABC', 'ABCD12', ''].forEach(function (p) {
+    var r = e.llegar({ placa: p, conductor: 'Ana', acceso: 'REGIONAL' });
+    assert.strictEqual(r.ok, false, 'debió rechazar ' + p);
+  });
+  assert.strictEqual(e.llegar({ placa: 'XYZ999', conductor: 'Ana', acceso: 'REGIONAL' }).ok, true);
+  assert.strictEqual(e.llegar({ placa: 'XYZ998', conductor: 'R2D2', acceso: 'REGIONAL' }).ok, false, 'nombre con números');
+  assert.strictEqual(e.llegar({ placa: 'XYZ997', conductor: 'Ana', acceso: 'OTRO' }).ok, false, 'acceso inválido');
+  assert.strictEqual(e.llegar({ placa: 'XYZ996', conductor: 'Ana', acceso: 'REGIONAL', horaClase: 100 }).ok, false, 'hora de clase pasada');
+});
+
+prueba('12. Placa duplicada activa → error', function () {
+  var e = ParkEngine.crear(datosMixtos(5, 0));
+  e.llegar({ placa: 'DUP123', conductor: 'Ana', acceso: 'REGIONAL' });
+  var r = e.llegar({ placa: 'DUP123', conductor: 'Ana', acceso: 'LAS_VEGAS' });
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error, 'La placa DUP123 ya está en el sistema.');
+});
+
+prueba('13. Motos: solo celdas M; una moto sin celda no bloquea a un carro', function () {
+  var e = ParkEngine.crear(datosMixtos(1, 0));       // 1 celda de carro, 0 de moto
+  e.llegar({ placa: 'MOT12A', conductor: 'Ana', acceso: 'REGIONAL' });   // primera en llegar
+  e.avanzar(1);
+  e.llegar({ placa: 'CAR123', conductor: 'Beto', acceso: 'LAS_VEGAS' });
+  var moto = e.state.vehiculos.filter(function (v) { return v.placa === 'MOT12A'; })[0];
+  var carro = e.state.vehiculos.filter(function (v) { return v.placa === 'CAR123'; })[0];
+  assert.strictEqual(moto.celdaId, null, 'la moto no recibe celda de carro');
+  assert.strictEqual(carro.celdaId, 'A-01', 'el carro no queda bloqueado por la moto');
+  var e2 = ParkEngine.crear(datosMixtos(0, 1));
+  e2.llegar({ placa: 'CAR124', conductor: 'Ana', acceso: 'REGIONAL' });
+  assert.strictEqual(e2.state.vehiculos[0].celdaId, null, 'el carro no recibe celda de moto');
+  e2.llegar({ placa: 'MOT12B', conductor: 'Beto', acceso: 'REGIONAL' });
+  assert.strictEqual(e2.state.vehiculos[1].celdaId, 'M-01');
+  e2.verificarInvariantes();
+});
+
+prueba('14. Datos de la demo: Regional 4 en pasarela + 1 afuera; 60 min de guion sin romper invariantes', function () {
+  var e = ParkEngine.crear(ParkData);
+  assert.strictEqual(e.state.pasarelas.REGIONAL.length, 4);
+  assert.strictEqual(e.state.afuera.REGIONAL.length, 1);
+  e.activarDebug(true);
+  e.setAutoPorteria(true);
+  e.avanzar(60);
+  e.verificarInvariantes();
+  var motos = e.state.vehiculos.filter(function (v) { return v.placa === 'MOT12A' || v.placa === 'MOT34B'; });
+  assert.strictEqual(motos.length, 2, 'las dos motos del guion llegaron');
+  motos.forEach(function (m) { if (m.celdaId) assert.strictEqual(m.celdaId.charAt(0), 'M'); });
 });
 
 console.log('\n' + pasadas + '/' + total + ' pruebas pasaron');

@@ -94,3 +94,54 @@ consola), 45 min de avance, llegadas, portería, exportar/importar JSON y `verif
 
 **Lo que sigue (fuera de esta tarea):** integrar el HTML de Stitch con este contrato, y decidir en `docs/PREGUNTAS.md`
 los puntos abiertos del valet.
+
+---
+
+## Estado TAREA 02 (frontend)
+
+**Motor usado:** stub (`src/engine.stub.js`). `src/engine.js` y `src/data.js` aún no existen, así que la integración con el motor real **no está probada**.
+
+### Qué funciona
+Verificado en Chrome con `file://`, sin red, a 1440 px y 390 px:
+- Vistas Conductor, Valet, Portería y operación y Modo demo (por defecto), con guía "Siguiente paso".
+- Flujo completo: registrar → posición → celda → portería → estacionar → salir.
+- Valet completo, incluido el pago rechazado.
+- Pasarela llena y estado AFUERA con "Generar llegada".
+- Validación de placa, toasts verdes y rojos, estados vacíos.
+- Play/Pausa, x1/x10, Avanzar 1 min, Exportar JSON, Reiniciar.
+- Sin scroll horizontal, texto mínimo de 14 px, Inter local cargada sin internet.
+
+### Qué falta
+- Probar contra el motor real cuando Hermes entregue y resolver las preguntas de `docs/PREGUNTAS.md`.
+- Con `src/engine.js` o `src/data.js` ausentes, Chrome registra un `ERR_FILE_NOT_FOUND` por cada archivo. Desaparece cuando Hermes los entregue.
+
+### Decisiones y diferencias con la tarea
+- **Tailwind** se carga localmente como pide la tarea, pero los estilos están en `src/ui/styles.css`; ninguna pantalla usa clases utilitarias. El archivo `src/vendor/tailwind.js` solo aporta su reset.
+- **Modo demo:** "Confirmar en portería" va encima del mapa para que el botón se vea sin scroll a 1440×900.
+- **Inicio:** "Registrar llegada" queda fijo abajo para que el siguiente paso siempre se vea.
+- **Portería automática:** es la única escritura directa de la UI sobre `engine.state` (ver PREGUNTAS).
+- **"Generar llegada"** son dos botones, uno por acceso.
+- **Guion del stub:** termina en 08:30. Después no salen más carros y la guía indica Reiniciar.
+
+### Cómo probar
+Abrir `index.html` con doble clic y seguir la línea "Siguiente paso". El badge "Motor de prueba" indica que corre el stub; desaparece con el motor real.
+
+---
+
+## Integración motor + frontend (Claude, 30-oct 14:30)
+
+- **Pull:** fallaba porque había cambios locales sin commit (docs y frontend) y Git en Windows/Linux veía `README.md`,
+  `AGENTS.md` y `.gitignore` como modificados solo por finales de línea (CRLF). Se guardaron copias, se hizo
+  fast-forward a `1a5b96c` y se agregó `.gitattributes` (`* text=auto`) para que no vuelva a pasar.
+- **TAREA 01B aplicada al motor por Claude** (no por Hermes, para no tener tres IAs editando a la vez):
+  `state.vehiculos` como arreglo, `engine.setAutoPorteria()`, `HISTORICO` como mapas hora→valor,
+  Regional 4 en pasarela + 1 afuera, validación de placa (carro `ABC123` / moto `ABC12D`, normaliza espacios y
+  minúsculas), nombre, acceso, hora de clase, placa duplicada, **Zona M con 10 celdas de moto** (7 ocupadas),
+  reparto FIFO por tipo (una moto sin celda no frena a un carro), tasas y estimación por tipo, `libresPorTipo`
+  en `resumen()`, devolución automática del valet 2 min después de `valetSolicitarCarro` (libera la celda),
+  invariante de tipo de celda, 2 motos en el guion.
+- **Pruebas:** `node tests/engine.test.js` → **14/14** (10 originales ajustadas + 11–14 nuevas).
+- **Humo de integración:** las 4 vistas × 3 pestañas del frontend se generan sin errores con el motor real en
+  4 momentos (inicio, registrado, +25 min, valet), registro → celda → portería automática → estacionado,
+  valet con pago rechazado y aprobado. El badge "Motor de prueba" ya no aparece.
+- `src/debug.html` actualizado al nuevo `state`.
