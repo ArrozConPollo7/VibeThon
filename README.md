@@ -1,20 +1,33 @@
-# VibeThon
+# VibeThon — ParkEAFIT
 
-Proyecto para la hackathon **VibeThon**.
-
-## Estado
-
-Andamiaje inicial. Stack y alcance del producto pendientes de definir.
+Parqueadero compartido de EAFIT (accesos Regional y Las Vegas): visibilidad de la espera, reparto justo de
+celdas y valet opcional. Todo simulado y local: un HTML + JavaScript clásico, sin npm, sin backend.
 
 ## Estructura
 
 ```
 .
-├── AGENTS.md          # convenciones de trabajo
-├── docs/              # notas del evento, alcance, decisiones
-└── (src del producto) # se define al cerrar el stack
+├── AGENTS.md                 # convenciones de trabajo y protocolo entre IAs
+├── docs/                     # reto, decisiones, tareas, preguntas, status
+├── src/data.js               # datos de prueba (celdas, accesos, guion, histórico)
+├── src/engine.js             # motor puro: filas, celdas, valet, eventos (sin DOM)
+├── src/debug.html            # verificación manual del motor (sin estilos)
+└── tests/engine.test.js      # 10 pruebas con assert de Node
 ```
 
-## Puesta en marcha
+## Cómo probar
 
-Se documentará aquí el comando de arranque una vez definido el stack.
+```bash
+node tests/engine.test.js      # 10/10 pruebas pasaron
+```
+
+Verificación manual: abrir `src/debug.html` con doble clic (funciona en `file://`) y usar los botones de avance,
+llegadas, portería, valet e invariantes. Detalle en `docs/STATUS.md`.
+
+## Estado
+
+| Fase | Alcance | Estado |
+|---|---|---|
+| 0 | Andamiaje del repo y convenciones | ✅ |
+| 1 | Motor de lógica (TAREA 01) | ✅ ver `docs/STATUS.md` |
+| 2 | Front / integración con el diseño | ⏳ |

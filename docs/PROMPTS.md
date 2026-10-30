@@ -16,6 +16,11 @@ Por cada prompt relevante, completar:
 - **Herramienta:** Hermes (DeepSeek)
 - **Objetivo:** construir el motor de filas, reparto justo, reservas y valet.
 - **Prompt usado:** `docs/TAREA_01_MOTOR_HERMES.md`
-- **Resultado / fallo observado:** _(completar)_
-- **Corrección del prompt:** _(completar)_
-- **Cómo verificamos:** `node tests/engine.test.js` + `src/debug.html`
+- **Resultado / fallo observado:** 10/10 pruebas en verde al primer ciclo (una prueba falló por un índice de
+  vehículo en el propio test, no por el motor). El contrato de la §9 se respetó sin renombrar nada; las
+  ambigüedades quedaron como desviaciones documentadas en `docs/STATUS.md` y preguntas en `docs/PREGUNTAS.md`.
+- **Corrección del prompt:** no hizo falta reescribir el prompt; sí faltó en la especificación (a) el estado de un
+  carro con valet antes de entregarse, (b) qué dispara `SOLICITADO → DEVUELTO` y (c) el criterio de `recomendado`
+  cuando el reparto es FIFO global (ambos accesos quedan en la misma posición global).
+- **Cómo verificamos:** `node tests/engine.test.js` → `10/10 pruebas pasaron`; y `src/debug.html` abierto con
+  `file://` (avance de 45 min, llegadas, portería, exportar/importar, invariantes) sin errores de consola.

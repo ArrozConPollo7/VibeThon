@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>ParkEAFIT — depuración del motor</title>
+<!-- Página mínima de verificación manual: sin estilos elaborados, sin frameworks. -->
+</head>
+<body>
+<h1>ParkEAFIT — depuración del motor</h1>
+<p><em>Verificación manual de la TAREA 01. Sin estilos: el diseño final lo trae Stitch.</em></p>
+
+<fieldset>
+  <legend>Reloj y simulación</legend>
+  <strong id="reloj">07:30</strong>
+  · libres <span id="libres">0</span>/<span id="total">0</span>
+  · ocupación <span id="ocupacion">0</span>%
+  · <label><input type="checkbox" id="autoPorteria"> portería automática</label>
+  · <label><input type="checkbox" id="debug" checked> verificar invariantes</label>
+  <div class="fila">
+    <button data-accion="avanzar" data-min="1">Avanzar 1 min</button>
+    <button data-accion="avanzar" data-min="5">+5 min</button>
+    <button data-accion="avanzar" data-min="15">+15 min</button>
+    <button data-accion="avanzar" data-min="30">+30 min</button>
+    <button data-accion="reiniciar">Reiniciar</button>
+    <button data-accion="generar" data-acceso="REGIONAL">Llegada aleatoria Regional</button>
+    <button data-accion="generar" data-acceso="LAS_VEGAS">Llegada aleatoria Las Vegas</button>
+    <button data-accion="generar">Llegada aleatoria</button>
+    <button data-accion="invariantes">Verificar invariantes</button>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Llegada manual</legend>
+  <label>Placa <input id="f-placa" size="8" value="ABC123"></label>
+  <label>Conductor <input id="f-conductor" size="14" value="JuanD"></label>
+  <label>Acceso
+    <select id="f-acceso">
+      <option value="REGIONAL">REGIONAL</option>
+      <option value="LAS_VEGAS">LAS_VEGAS</option>
+    </select>
+  </label>
+  <label>Hora de clase (HH:MM) <input id="f-clase" size="6" value="08:00"></label>
+  <label><input type="checkbox" id="f-valet"> con valet</label>
+  <label><input type="checkbox" id="f-sin"> sale sin estacionar</label>
+  <button data-accion="llegar">Llegar</button>
+</fieldset>
+
+<fieldset>
+  <legend>Resumen (<span id="politica"></span>)</legend>
+  <pre id="resumen"></pre>
+</fieldset>
+
+<fieldset>
+  <legend>Pasarelas y cola externa</legend>
+  <div id="pasarelas"></div>
+</fieldset>
+
+<fieldset>
+  <legend>Vehículos</legend>
+  <div id="tabla-vehiculos"></div>
+</fieldset>
+
+<fieldset>
+  <legend>Celdas</legend>
+  <div id="celdas"></div>
+</fieldset>
+
+<fieldset>
+  <legend>Registro de eventos (más recientes primero)</legend>
+  <div id="eventos"></div>
+</fieldset>
+
+<fieldset>
+  <legend>Estado (exportar / importar)</legend>
+  <textarea id="json" rows="6" cols="100"></textarea>
+  <div class="fila">
+    <button data-accion="exportar">Exportar a la caja</button>
+    <button data-accion="importar">Importar desde la caja</button>
+    <button data-accion="guardar">Guardar en localStorage</button>
+    <button data-accion="cargar">Cargar de localStorage</button>
+  </div>
+</fieldset>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var engine = ParkEngine.crear(ParkData);
+  engine.activarDebug(true);
+  engine.suscribir(render);   // la UI se redibuja con cada cambio del motor
+
+  function $(id) { return document.getElementById(id); }
+  function esc(t) {
+    return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function minAHora(texto) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(texto || '').trim());
+    if (!m) return null;
+    return Number(m[1]) * 60 + Number(m[2]);
+  }
+  function aviso(r) {
+    if (r && r.ok === false) window.alert('❌ ' + r.error);
+    return r;
+  }
+  function vehiculos() {
+    return Object.keys(engine.state.vehiculos).map(function (k) { return engine.state.vehiculos[k]; });
+  }
+  function porPlaca(placa) {
+    return vehiculos().filter(function (v) { return v.placa === placa; })[0];
+  }
+
+  // --- acciones --------------------------------------------------------
+  document.addEventListener('click', function (ev) {
+    var boton = ev.target.closest('button');
+    if (!boton) return;
+    var accion = boton.getAttribute('data-accion');
+    var placa = boton.getAttribute('data-placa');
+
+    if (accion === 'avanzar') aviso(engine.avanzar(Number(boton.getAttribute('data-min'))));
+    else if (accion === 'reiniciar') { aviso(engine.reiniciar()); }
+    else if (accion === 'generar') aviso(engine.generarLlegada(boton.getAttribute('data-acceso') || undefined));
+    else if (accion === 'invariantes') {
+      try { engine.verificarInvariantes(); window.alert('✅ Invariantes válidos.'); }
+      catch (e) { window.alert('❌ ' + e.message); }
+    } else if (accion === 'llegar') {
+      aviso(engine.llegar({
+        placa: $('f-placa').value,
+        conductor: $('f-conductor').value,
+        acceso: $('f-acceso').value,
+        horaClase: minAHora($('f-clase').value),
+        valet: $('f-valet').checked,
+        saleSinEstacionar: $('f-sin').checked
+      }));
+    } else if (accion === 'porteria') aviso(engine.confirmarPorteria(boton.getAttribute('data-acceso'), placa));
+    else if (accion === 'estacionar') aviso(engine.estacionar(placa));
+    else if (accion === 'salir') aviso(engine.salir(placa));
+    else if (accion === 'sin') aviso(engine.marcarSaleSinEstacionar(placa, porPlaca(placa).saleSinEstacionar ? false : true));
+    else if (accion === 'valetSel') aviso(engine.valetSeleccionar(placa));
+    else if (accion === 'valetPagar') aviso(engine.valetPagar(placa, window.prompt('Método de pago (TARJETA / NEQUI / PSE / EFECTIVO / RECHAZO)', 'TARJETA')));
+    else if (accion === 'valetEntregar') aviso(engine.valetEntregar(placa));
+    else if (accion === 'valetSolicitar') aviso(engine.valetSolicitarCarro(placa));
+    else if (accion === 'valetDevolver') aviso(engine.valetDevolver(placa));
+    else if (accion === 'estimar') {
+      var p = porPlaca(placa);
+      window.alert('Espera: ' + engine.estimarEspera(placa).texto + '\n' +
+        'Posición: ' + JSON.stringify(engine.posicion(placa)) + '\n' +
+        'Ruta: ' + JSON.stringify(engine.ruta(placa)) + '\n' +
+        'Clase: ' + JSON.stringify(engine.llegoAClase(placa)));
+    } else if (accion === 'exportar') $('json').value = engine.exportarJSON();
+    else if (accion === 'importar') aviso(engine.importarJSON($('json').value));
+    else if (accion === 'guardar') aviso(engine.guardarLocal());
+    else if (accion === 'cargar') aviso(engine.cargarLocal());
+
+    if (accion !== 'invariantes') render();
+  });
+
+  $('autoPorteria').addEventListener('change', function () {
+    engine.state.autoPorteria = this.checked;
+    render();
+  });
+
+  // --- dibujo ----------------------------------------------------------
+  function accionesDe(v) {
+    var out = '';
+    if (v.estado === 'EN_PASARELA' || v.estado === 'CELDA_ASIGNADA') {
+      out += '<button data-accion="porteria" data-acceso="' + v.acceso + '" data-placa="' + v.placa + '">Portería</button> ';
+      out += '<button data-accion="sin" data-placa="' + v.placa + '">' + (v.saleSinEstacionar ? 'Sí necesita celda' : 'Sale sin estacionar') + '</button> ';
+      out += '<button data-accion="salir" data-placa="' + v.placa + '">Salir (sin estacionar)</button> ';
+      if (!v.valet) out += '<button data-accion="valetSel" data-placa="' + v.placa + '">Valet: seleccionar</button> ';
+    }
+    if (v.estado === 'EN_RECORRIDO') out += '<button data-accion="estacionar" data-placa="' + v.placa + '">Estacionar</button> ';
+    if (v.estado === 'ESTACIONADO') out += '<button data-accion="salir" data-placa="' + v.placa + '">Salir</button> ';
+    if (v.valet) {
+      if (v.valet.estado === 'SELECCIONADO') out += '<button data-accion="valetPagar" data-placa="' + v.placa + '">Valet: pagar</button> ';
+      if (v.valet.estado === 'PAGADO') out += '<button data-accion="valetEntregar" data-placa="' + v.placa + '">Valet: entregar</button> ';
+      if (v.valet.estado === 'LLAVES_EN_CUSTODIA') out += '<button data-accion="valetSolicitar" data-placa="' + v.placa + '">Valet: solicitar</button> ';
+      if (v.valet.estado === 'SOLICITADO') out += '<button data-accion="valetDevolver" data-placa="' + v.placa + '">Valet: devolver</button> ';
+    }
+    out += '<button data-accion="estimar" data-placa="' + v.placa + '">Ver espera / ruta</button>';
+    return out;
+  }
+
+  function render() {
+    var r = engine.resumen();
+    $('reloj').textContent = r.reloj;
+    $('libres').textContent = r.libres;
+    $('total').textContent = r.total;
+    $('ocupacion').textContent = r.ocupacionPct;
+    $('politica').textContent = ParkEngine.POLITICA_TEXTO;
+    $('resumen').textContent = JSON.stringify(r, null, 2);
+
+    // pasarelas y cola externa
+    var html = '';
+    Object.keys(engine.state.pasarelas).forEach(function (acceso) {
+      html += '<h3>' + esc(acceso) + ' — pasarela (' + engine.state.pasarelas[acceso].length + '/4)</h3><ol>';
+      engine.state.pasarelas[acceso].forEach(function (id) {
+        var v = engine.state.vehiculos[id];
+        html += '<li>' + esc(v.placa) + ' — ' + esc(v.estado) + ' — ' + esc(v.celdaId || 'sin celda') + '</li>';
+      });
+      html += '</ol><strong>Afuera (' + engine.state.afuera[acceso].length + ')</strong><ol>';
+      engine.state.afuera[acceso].forEach(function (id) {
+        var v = engine.state.vehiculos[id];
+        html += '<li>' + esc(v.placa) + ' — esperando registro desde ' + ParkEngine.horaTexto(v.llegadaAfueraEn) + '</li>';
+      });
+      html += '</ol>';
+    });
+    $('pasarelas').innerHTML = html;
+
+    // vehículos
+    var filas = vehiculos().map(function (v) {
+      var est = engine.estimarEspera(v.placa);
+      return '<tr>' +
+        '<td>' + esc(v.placa) + '</td>' +
+        '<td>' + esc(v.acceso) + '</td>' +
+        '<td>' + esc(v.estado) + '</td>' +
+        '<td>' + esc(v.celdaId || '—') + '</td>' +
+        '<td>' + esc(v.saleSinEstacionar ? 'sí' : '—') + '</td>' +
+        '<td>' + esc(v.valet ? v.valet.estado + (v.valet.casillero ? ' / casillero ' + v.valet.casillero : '') : '—') + '</td>' +
+        '<td>' + esc(est.texto || est.error || '') + '</td>' +
+        '<td>' + accionesDe(v) + '</td>' +
+        '</tr>';
+    }).join('');
+    $('tabla-vehiculos').innerHTML =
+      '<table border="1" cellpadding="3"><thead><tr><th>Placa</th><th>Acceso</th><th>Estado</th>' +
+      '<th>Celda</th><th>Sale sin estacionar</th><th>Valet</th><th>Espera</th><th>Acciones</th>' +
+      '</tr></thead><tbody>' + filas + '</tbody></table>';
+
+    // celdas
+    var celdas = engine.state.celdas.map(function (c) {
+      return '<span title="' + esc(c.id) + '">' + esc(c.id) + ' ' + esc(c.estado.charAt(0)) +
+        (c.placa ? ' ' + esc(c.placa) : '') + '</span>';
+    }).join(' | ');
+    $('celdas').innerHTML = celdas;
+
+    // eventos
+    $('eventos').innerHTML = engine.state.eventos.slice(-40).reverse().map(function (ev) {
+      return '<div>' + esc(ev.t) + ' <strong>' + esc(ev.tipo) + '</strong> — ' + esc(ev.mensaje) + '</div>';
+    }).join('');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
