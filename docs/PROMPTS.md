@@ -28,6 +28,22 @@ Por cada prompt relevante, completar:
 - **Corrección del prompt:** el contrato dejó ambigüedades (nombre global de `data.js`, forma de `state`, flujo del valet, `autoPorteria`), registradas en `docs/PREGUNTAS.md`. Conviene fijarlas en la sección 9 de TAREA_01.
 - **Cómo verificamos:** recorrido automatizado en Chrome sobre `file://` sin red, a 1440 y 390 px (21/21 comprobaciones: flujo completo, valet con rechazo, AFUERA, exportar, sin scroll horizontal, mínimo 14 px, consola limpia), más revisión visual de capturas.
 
+## Prompt 3 — Rediseño inmersivo y accesibilidad
+- **Herramienta:** Claude Code
+- **Objetivo:** identidad EAFIT, validación de placas, motos, tema oscuro, tamaño de letra, animaciones y sonidos, sin romper el flujo.
+- **Prompt usado:** `docs/TAREA_03_REDISENO_FRONT.md`
+- **Resultado / fallo observado:** el motor cambió dos veces durante la tarea. Con el `data.js` real, las celdas sobre y=30 chocaban con la vía fija del mapa, y a A++ en 390 px la barra superior fija ocupaba media pantalla. Además, `ABC123`, la placa de ejemplo, está precargada como carro estacionado.
+- **Corrección del prompt:** el mapa pasó a dibujarse desde las coordenadas reales y la barra dejó de ser fija en móvil. Conviene pedir en la especificación que los datos de prueba no usen las placas de ejemplo de la interfaz.
+- **Cómo verificamos:** recorrido automatizado después de cada bloque en Chrome sobre `file://` sin red, con motor real y stub (placas, moto a celda M, duplicada, temas, A++ a 390 px, persistencia, objetivos de 44 px), contraste AA medido en 25 pares y revisión de capturas.
+
+## Prompt 4 — Mapa real del campus
+- **Herramienta:** Claude Code
+- **Objetivo:** reemplazar el plano por el mapa real de 624 celdas sin perder estado entre renders.
+- **Prompt usado:** `docs/TAREA_04_MAPA_REAL.md`
+- **Resultado / fallo observado:** al llegar las celdas reales, el mapa anterior rompió el render porque no conocía los tipos `PMR` y `ECO`. Además, `ParkingMap` crea su propio DOM y `App.morf` lo habría borrado en cada render. Con una celda en otro lote, el zoom pedido ocultaba el inicio de la ruta.
+- **Corrección del prompt:** nodo persistente que `morf` salta, y vista completa cuando el acceso y la celda están en lotes distintos.
+- **Cómo verificamos:** 19/19 comprobaciones del mapa (reservadas contra el motor, `RGL206` → `I-170`, moto, x10 sin recrear el nodo, tema oscuro, A++ a 390 px) y 41/41 del recorrido completo.
+
 ## Prompt 1B — Ajustes del contrato del motor
 - **Herramienta:** Claude (arquitecto) → Hermes
 - **Fallo observado:** la especificación original no fijaba el nombre global de los datos, la forma de `state` ni el flujo del valet, y tenía un error (3 en pasarela + 1 afuera con capacidad 4). Claude Code lo detectó al construir contra el contrato.

@@ -145,3 +145,50 @@ Abrir `index.html` con doble clic y seguir la línea "Siguiente paso". El badge 
   4 momentos (inicio, registrado, +25 min, valet), registro → celda → portería automática → estacionado,
   valet con pago rechazado y aprobado. El badge "Motor de prueba" ya no aparece.
 - `src/debug.html` actualizado al nuevo `state`.
+
+## Estado TAREA 03
+
+**Motor usado:** real (`src/engine.js` + `src/data.js` con 01B). El stub queda al día con 01B como respaldo. No se editó ninguno de los dos archivos de motor.
+
+### Hecho
+- **§1 Contrato y validación:** stub en 01B; UI con `setAutoPorteria`; placa con máscara `ABC 123`, chip Carro/Moto, botón deshabilitado hasta ser válida y error del motor en toast; nombre y hora de clase validados; Zona M y libres por tipo.
+- **§2 y §4 Visual y accesibilidad:** tokens en `:root`, sin hex sueltos; concepto "torre de control"; tema Claro/Oscuro/Sistema, A/A+/A++, alto contraste, reducir animaciones y silencio; preferencias aplicadas antes del primer pintado.
+- **§3 Inmersión:** fila con FLIP, número que rueda, pulso de celda, ruta dibujada, revelación, confeti de 1,2 s, anillo de progreso, deslizamiento de 200 ms y sonidos con Web Audio.
+- **§5 Extras:** bienvenida e indicador "En vivo".
+
+### Diferencias con la tarea
+- El mapa usa viewBox `-6 -5 112 70` y dibuja zonas alrededor de las celdas: en `data.js` hay celdas sobre y=30, así que una vía fija chocaba con ellas.
+- El chip de tipo usa ícono SVG en vez del emoji del ejemplo, por coherencia con §2.
+- El código `V-XXX` aparece al confirmar la entrega porque el motor real lo genera ahí.
+- Paleta EAFIT aún PROVISIONAL.
+
+### Problemas abiertos
+- Tailwind sigue cargado sin clases utilitarias y deja su aviso de producción en consola (es `warning`, no error).
+- La bienvenida aparece en cada recarga.
+
+## Estado TAREA 04
+
+**Mapa real integrado y estable.** El mapa SVG anterior se retiró. No se editaron `src/engine.js`, `src/data.js` ni `src/mapa-datos.js`.
+
+### Hecho
+- `src/ui/mapa.js` mantiene un mapa persistente por contenedor (celular y panel): `App.morf` salta los huecos `data-mapa` y el nodo se reubica con `appendChild`. No se recrea al cambiar de pestaña ni con el reloj.
+- Un solo `setStatuses` por notificación, solo con celdas cambiadas. Sin lote G; las celdas M no se envían al mapa.
+- Celda asignada: zoom, selección, ruta con trazo animado y pasos. Motos: tarjeta sin mapa.
+- Operación: botones Principal, Ingeniería y Ver todo, tarjeta de celda al tocarla, pulso de 1,5 s al reservar sin mover la vista.
+- Leyenda con texto, `aria-label` con resumen y tema sincronizado. "Reducir animaciones" también quita el zoom animado.
+
+### Verificado (Chrome, `file://`, sin red)
+- Arranque: 6 celdas reservadas coinciden con el motor.
+- `RGL206` → `I-170`, con ruta y texto que explican el cambio de lote.
+- Moto `ABC12D` → tarjeta de motos.
+- x10 durante 2 h simuladas: mismo nodo, cero cambios de zoom, consola sin errores.
+- Tema oscuro y A++ a 390 px sin scroll horizontal.
+
+### Diferencias con la tarea
+- Si la celda está en otro lote, el celular usa `showAll()` en vez de `focusLot()`: con el zoom al lote no se vería la ruta desde el acceso.
+- Se retiró el tooltip anterior del mapa: la tarjeta bajo el mapa lo reemplaza. El mapa se usa con ratón o dedo; con teclado la información está en el texto y el registro.
+- Se omitió el mini-mapa opcional de Inicio.
+
+### Límites
+- `src/engine.stub.js` sigue con sus celdas de prueba: si se usara, el mapa real no reflejaría sus estados. Con el motor real no se carga.
+- La ruta del motor es aproximada y atraviesa edificios en el plano.
