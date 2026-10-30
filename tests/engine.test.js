@@ -263,6 +263,8 @@ prueba('8. Valet: pago obligatorio y flujo completo hasta LLAVES_EN_CUSTODIA', f
   assert.strictEqual(e.valetEntregar('VLT101').error, 'Primero completa el pago del valet.');
   assert.strictEqual(e.valetPagar('VLT101', 'RECHAZO').error, 'Pago rechazado. Intenta con otro método.');
   assert.strictEqual(e.valetPagar('VLT101', 'TARJETA').ok, true);
+  assert.strictEqual(e.valetEntregar('VLT101').error, 'Primero un operador debe aceptar el servicio.');
+  assert.strictEqual(e.valetAceptar('VLT101', 'Carlos Restrepo').ok, true);
   var entrega = e.valetEntregar('VLT101');
   assert.strictEqual(entrega.ok, true);
   assert.ok(/^V-\d{3}$/.test(entrega.valet.codigo), 'código con formato V-XXX');
@@ -381,21 +383,34 @@ prueba('15. Inspección del operador: exige recepción y datos válidos', functi
   e.valetPagar('INS123', 'TARJETA');
 
   // antes de entregar el carro al operador no se puede inspeccionar
-  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 1000, fotos: 3 }).ok, false);
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 1000, fotos: [] }).ok, false);
 
+  e.valetAceptar('INS123', 'Luisa Mejía');
   assert.strictEqual(e.valetEntregar('INS123').ok, true);
-  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: -5, fotos: 3 }).error,
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: -5, fotos: [] }).error,
     'Los kilómetros deben ser un número mayor o igual a 0.');
-  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 900, fotos: 5 }).error,
-    'Las fotos deben ser un número entero entre 0 y 4.');
-  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: 'medio', km: 900, fotos: 2 }).ok, false);
+  var cinco = ['Frontal', 'Trasera', 'Lat. izq.', 'Lat. der.', 'Tablero'].map(function (vista) {
+    return { vista: vista, dataUrl: 'data:image/jpeg;base64,AAAA' };
+  });
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 900, fotos: cinco }).error,
+    'Máximo 4 fotos por inspección.');
+  assert.strictEqual(e.valetInspeccionar('INS123', {
+    combustible: '1/2', km: 900, fotos: [{ vista: 'Frontal', dataUrl: 'http://x/foto.jpg' }]
+  }).ok, false);
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: 'medio', km: 900, fotos: [] }).ok, false);
 
-  var ok = e.valetInspeccionar('INS123', { combustible: '3/4', km: 48320, novedades: 'Rayón leve en la puerta derecha', fotos: 4 });
+  var ok = e.valetInspeccionar('INS123', {
+    combustible: '3/4', km: 48320, novedades: 'Rayón leve en la puerta derecha',
+    fotos: ['Frontal', 'Trasera', 'Lat. izq.', 'Tablero'].map(function (vista) {
+      return { vista: vista, dataUrl: 'data:image/jpeg;base64,AAAA' };
+    })
+  });
   assert.strictEqual(ok.ok, true);
   var v = e.state.vehiculos.filter(function (x) { return x.placa === 'INS123'; })[0];
   assert.strictEqual(v.valet.inspeccion.combustible, '3/4');
   assert.strictEqual(v.valet.inspeccion.km, 48320);
-  assert.strictEqual(v.valet.inspeccion.fotos, 4);
+  assert.strictEqual(v.valet.inspeccion.fotos.length, 4);
+  assert.strictEqual(v.valet.inspeccion.fotos[0].vista, 'Frontal');
   assert.strictEqual(v.valet.inspeccion.novedades, 'Rayón leve en la puerta derecha');
   assert.ok(v.valet.inspeccion.hora > 0, 'la inspección guarda la hora simulada');
   assert.ok(e.state.eventos.some(function (ev) { return ev.tipo === 'VALET_INSPECCION'; }));
@@ -411,6 +426,7 @@ prueba('16. Entrega con PIN: traslado → bahía → PIN incorrecto → DEVUELTO
   assert.strictEqual(v.valet.tarifa, 8000);
   assert.ok(['Carlos Restrepo', 'Luisa Mejía', 'Andrés Gil'].indexOf(v.valet.operador) >= 0);
 
+  e.valetAceptar('PIN123', 'Andrés Gil');
   e.valetEntregar('PIN123');
   e.confirmarPorteria('REGIONAL', 'PIN123');
   e.estacionar('PIN123');
@@ -442,6 +458,7 @@ prueba('17. valetListar(): sin PIN, con celda, parqueadero y casillero', functio
   var e = ParkEngine.crear(datos({ nCeldas: 2 }));
   e.llegar({ placa: 'LIS123', conductor: 'Laura', acceso: 'REGIONAL', valet: true });
   e.valetPagar('LIS123', 'PSE');
+  e.valetAceptar('LIS123', 'Carlos Restrepo');
   e.valetEntregar('LIS123');
   e.confirmarPorteria('REGIONAL', 'LIS123');
   e.estacionar('LIS123');

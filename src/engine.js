@@ -200,7 +200,7 @@
     }
 
     // --- reparto de celdas (R3, R4, R5, R6) ----------------------------
-    function elegirCelda(v, disponibles) {
+    function masCercana(v, disponibles) {
       var porteria = datosBase.accesos[v.acceso].porteria;
       var mejor = null;
       var mejorDist = Infinity;
@@ -212,6 +212,22 @@
         }
       });
       return mejor;
+    }
+
+    // R4 + preferencia: la preferencia NO cambia el orden de la fila (eso lo decide asignarCeldas);
+    // solo cambia cuál celda libre recibe quien ya tiene el turno.
+    function elegirCelda(v, disponibles) {
+      var pref = v.preferencia || null;
+      v.preferenciaCumplida = 'no';
+      if (pref && pref.celdaId) {
+        var exacta = disponibles.filter(function (c) { return c.id === pref.celdaId; })[0];
+        if (exacta) { v.preferenciaCumplida = 'celda'; return exacta; }
+      }
+      if (pref && pref.zona) {
+        var deZona = disponibles.filter(function (c) { return c.zona === pref.zona; });
+        if (deZona.length) { v.preferenciaCumplida = 'zona'; return masCercana(v, deZona); }
+      }
+      return masCercana(v, disponibles);
     }
 
     function reservarCelda(v, celda) {
@@ -361,6 +377,21 @@
         return fallo('La placa ' + placa + ' ya está en el sistema.');
       }
 
+      // Preferencia de parqueadero/celda: no da prioridad, solo elige mejor cuando llega el turno.
+      var preferencia = null;
+      if (opciones.preferencia) {
+        var pZona = opciones.preferencia.zona || null;
+        var pCelda = opciones.preferencia.celdaId || null;
+        if (pZona && !datosBase.zonas[pZona]) return fallo('Parqueadero preferido inválido.');
+        if (pCelda) {
+          var celdaPref = celdaPorId(pCelda);
+          if (!celdaPref) return fallo('La celda preferida ' + pCelda + ' no existe.');
+          if (celdaPref.tipo && celdaPref.tipo !== tipo) return fallo('La celda ' + pCelda + ' no es de tu tipo de vehículo.');
+          pZona = pZona || celdaPref.zona;
+        }
+        preferencia = { zona: pZona, celdaId: pCelda };
+      }
+
       var v = {
         id: ++state.contadorVehiculo,
         placa: placa,
@@ -375,6 +406,8 @@
         celdaId: null,
         valet: opciones.valet ? { codigo: null, estado: 'SELECCIONADO', casillero: null, pagado: false } : null,
         horaClase: horaClase,
+        preferencia: preferencia,
+        preferenciaCumplida: null,
         etaCelda: null
       };
       state.vehiculos.push(v);
@@ -692,6 +725,48 @@
       return String(Math.floor(rng() * 9000) + 1000);
     }
 
+    function valetAceptar(placa, operador) {
+      var v = porPlaca(placa);
+      if (!v) return fallo('Placa no registrada: ' + placa + '.');
+      if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
+      if (operador && OPERADORES_VALET.indexOf(operador) < 0) return fallo('Operador desconocido.');
+      if (v.valet.estado === 'ACEPTADO' || v.valet.estado === 'ENTREGADO_A_VALET' || v.valet.estado === 'EN_FILA') {
+        return fallo('Ese servicio ya fue aceptado por ' + (v.valet.operador || 'otro operador') + '.');
+      }
+      if (v.valet.estado !== 'PAGADO') return fallo('Todavía no se puede aceptar (estado ' + v.valet.estado + ').');
+      v.valet.estado = 'ACEPTADO';
+      v.valet.operador = operador || v.valet.operador || OPERADORES_VALET[0];
+      v.valet.aceptadoEn = state.clock;
+      pushEvento('VALET_ACEPTADO', v.valet.operador + ' aceptó el servicio de ' + placa + '.',
+        { placa: placa, operador: v.valet.operador });
+      notificar();
+      return { ok: true, valet: clonar(v.valet) };
+    }
+
+    function valetRegistrarUbicacion(placa, datos) {
+      datos = datos || {};
+      var v = porPlaca(placa);
+      if (!v) return fallo('Placa no registrada: ' + placa + '.');
+      if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
+      if (v.estado !== 'ESTACIONADO') return fallo('Solo se registra la ubicación cuando el carro ya está estacionado.');
+      var nota = String(datos.nota == null ? '' : datos.nota).trim();
+      if (nota.length > 140) return fallo('La nota no puede pasar de 140 caracteres.');
+      var celda = celdaDe(v);
+      v.valet.ubicacion = {
+        celdaId: v.celdaId,
+        zona: celda ? celda.zona : null,
+        nombreZona: celda && datosBase.zonas[celda.zona] ? datosBase.zonas[celda.zona].nombre : null,
+        casillero: v.valet.casillero || null,
+        nota: nota,
+        hora: state.clock
+      };
+      pushEvento('VALET_UBICACION', 'Ubicación de ' + placa + ' registrada: ' + v.celdaId +
+        (v.valet.casillero ? ', llaves en caja ' + v.valet.casillero : '') + (nota ? ' — ' + nota : '') + '.',
+        { placa: placa, celda: v.celdaId, casillero: v.valet.casillero });
+      notificar();
+      return { ok: true, ubicacion: clonar(v.valet.ubicacion) };
+    }
+
     function valetInspeccionar(placa, datos) {
       datos = datos || {};
       var v = porPlaca(placa);
@@ -712,20 +787,28 @@
       if (novedades.length > 140) {
         return fallo('Las novedades no pueden pasar de 140 caracteres.');
       }
-      var fotos = Number(datos.fotos == null ? 0 : datos.fotos);
-      if (!isFinite(fotos) || fotos < 0 || fotos > 4 || Math.floor(fotos) !== fotos) {
-        return fallo('Las fotos deben ser un número entero entre 0 y 4.');
+      var VISTAS_FOTO = ['Frontal', 'Trasera', 'Lat. izq.', 'Lat. der.', 'Tablero'];
+      var fotos = datos.fotos == null ? [] : datos.fotos;
+      if (!Array.isArray(fotos)) return fallo('Las fotos deben ser un arreglo de hasta 4 imágenes.');
+      if (fotos.length > 4) return fallo('Máximo 4 fotos por inspección.');
+      for (var i = 0; i < fotos.length; i++) {
+        var f = fotos[i] || {};
+        if (VISTAS_FOTO.indexOf(f.vista) < 0) return fallo('Foto ' + (i + 1) + ': vista inválida (usa ' + VISTAS_FOTO.join(', ') + ').');
+        if (typeof f.dataUrl !== 'string' || f.dataUrl.indexOf('data:image/') !== 0) {
+          return fallo('Foto ' + (i + 1) + ': la imagen debe venir como dataUrl.');
+        }
+        if (f.dataUrl.length > 300000) return fallo('Foto ' + (i + 1) + ': supera el tamaño permitido (300 KB).');
       }
       v.valet.inspeccion = {
         hora: state.clock,
         combustible: combustible,
         km: km,
         novedades: novedades,
-        fotos: fotos
+        fotos: clonar(fotos)
       };
       pushEvento('VALET_INSPECCION', 'Inspección de ' + placa + ' registrada: ' + combustible + ', ' + km + ' km' +
-        (novedades ? ', novedades: ' + novedades : ', sin novedades') + ' (' + fotos + '/4 fotos).',
-        { placa: placa, combustible: combustible, km: km, fotos: fotos });
+        (novedades ? ', novedades: ' + novedades : ', sin novedades') + ' (' + fotos.length + '/4 fotos).',
+        { placa: placa, combustible: combustible, km: km, fotos: fotos.length });
       notificar();
       return { ok: true, inspeccion: clonar(v.valet.inspeccion) };
     }
@@ -749,7 +832,7 @@
     }
 
     function valetListar() {
-      var orden = ['PAGADO', 'ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO', 'ESTACIONADO',
+      var orden = ['PAGADO', 'ACEPTADO', 'ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO', 'ESTACIONADO',
         'LLAVES_EN_CUSTODIA', 'SOLICITADO', 'EN_TRASLADO', 'LISTO_EN_BAHIA', 'DEVUELTO'];
       return vehiculos().filter(function (v) { return !!v.valet; })
         .sort(function (a, b) {
@@ -772,6 +855,9 @@
             nombreZona: celda && datosBase.zonas[celda.zona] ? datosBase.zonas[celda.zona].nombre : null,
             casillero: v.valet.casillero || null,
             inspeccion: v.valet.inspeccion ? clonar(v.valet.inspeccion) : null,
+            ubicacion: v.valet.ubicacion ? clonar(v.valet.ubicacion) : null,
+            preferencia: v.preferencia ? clonar(v.preferencia) : null,
+            preferenciaCumplida: v.preferenciaCumplida || null,
             pagadoEn: v.valet.pagadoEn != null ? v.valet.pagadoEn : null,
             enCustodiaMin: v.valet.pagadoEn != null ? (state.clock - v.valet.pagadoEn) : null
           };
@@ -843,7 +929,8 @@
       if (!v) return fallo('Placa no registrada: ' + placa + '.');
       if (!v.valet) return fallo('Primero selecciona el servicio de valet.');
       if (!v.valet.pagado) return fallo('Primero completa el pago del valet.');
-      if (v.valet.estado !== 'PAGADO') return fallo('El valet de ' + placa + ' ya fue entregado.');
+      if (v.valet.estado === 'PAGADO') return fallo('Primero un operador debe aceptar el servicio.');
+      if (v.valet.estado !== 'ACEPTADO') return fallo('El valet de ' + placa + ' ya fue recibido.');
 
       v.valet.estado = 'ENTREGADO_A_VALET';
       v.valet.codigo = 'V-' + pad3(++state.contadorValet);
@@ -1137,6 +1224,8 @@
       valetEntregar: valetEntregar,
       valetSolicitarCarro: valetSolicitarCarro,
       valetDevolver: valetDevolver,
+      valetAceptar: valetAceptar,
+      valetRegistrarUbicacion: valetRegistrarUbicacion,
       valetInspeccionar: valetInspeccionar,
       valetEntregarCliente: valetEntregarCliente,
       valetListar: valetListar,

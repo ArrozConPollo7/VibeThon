@@ -1,0 +1,1148 @@
+[
+  {
+    "id": "01",
+    "titulo": "Placa válida en minúsculas se normaliza",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "lau123",
+          "conductor": "Laura",
+          "acceso": "REGIONAL"
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "LAU123",
+          "estado": "CELDA_ASIGNADA",
+          "celdaId": "A-01"
+        }
+      }
+    ]
+  },
+  {
+    "id": "02",
+    "titulo": "Placa inválida se rechaza",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "ABC12",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        },
+        "espera": {
+          "ok": false,
+          "error": "Placa inválida. Carro: ABC123 · Moto: ABC12D."
+        }
+      }
+    ]
+  },
+  {
+    "id": "03",
+    "titulo": "Placa duplicada activa se rechaza",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "DUP123",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "DUP123",
+          "conductor": "Ana",
+          "acceso": "LAS_VEGAS"
+        },
+        "espera": {
+          "ok": false,
+          "error": "La placa DUP123 ya está en el sistema."
+        }
+      }
+    ]
+  },
+  {
+    "id": "04",
+    "titulo": "Nombre y hora de clase inválidos",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "NOM123",
+          "conductor": "Ana 123",
+          "acceso": "REGIONAL"
+        },
+        "espera": {
+          "ok": false,
+          "error": "Nombre inválido: usa solo letras y espacios (2 a 40 caracteres)."
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "HOR123",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "horaClase": 300
+        },
+        "espera": {
+          "ok": false,
+          "error": "La hora de clase debe estar entre 06:00 y 22:00."
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "HOR124",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "horaClase": 440
+        },
+        "espera": {
+          "ok": false,
+          "error": "La hora de clase debe ser posterior a la hora actual (07:20)."
+        }
+      }
+    ]
+  },
+  {
+    "id": "05",
+    "titulo": "FIFO entre accesos decide quién recibe la celda",
+    "datos": {
+      "nCeldas": 4,
+      "iniciales": [
+        {
+          "placa": "AAA111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        },
+        {
+          "placa": "BBB222",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-02"
+        },
+        {
+          "placa": "CCC333",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-03"
+        },
+        {
+          "placa": "DDD444",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-04"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "TRX100",
+          "conductor": "Rita",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 1
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "TRX200",
+          "conductor": "LV",
+          "acceso": "LAS_VEGAS"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 2
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "TRX300",
+          "conductor": "Rita",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "AAA111",
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "TRX100",
+          "celdaId": "A-01"
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "BBB222"
+      },
+      {
+        "verificar": {
+          "placa": "TRX200",
+          "celdaId": "A-02"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "TRX300",
+          "celdaId": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "06",
+    "titulo": "Orden por fila: nunca adelanta el de atrás",
+    "datos": {
+      "nCeldas": 4,
+      "iniciales": [
+        {
+          "placa": "AAA111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        },
+        {
+          "placa": "BBB222",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-02"
+        },
+        {
+          "placa": "CCC333",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-03"
+        },
+        {
+          "placa": "DDD444",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-04"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "FIL101",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 1
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "FIL102",
+          "conductor": "Beto",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 1
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "FIL103",
+          "conductor": "Carla",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "AAA111"
+      },
+      {
+        "verificar": {
+          "placa": "FIL101",
+          "celdaId": "A-01"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "FIL103",
+          "celdaId": null
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "BBB222"
+      },
+      {
+        "verificar": {
+          "placa": "FIL102",
+          "celdaId": "A-02"
+        }
+      }
+    ]
+  },
+  {
+    "id": "07",
+    "titulo": "Pasarela llena: el 5.º espera afuera y entra al liberarse un cupo",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PAS001",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PAS002",
+          "conductor": "Beto",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PAS003",
+          "conductor": "Carla",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PAS004",
+          "conductor": "Diego",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PAS005",
+          "conductor": "Elena",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PAS005",
+          "estado": "AFUERA",
+          "registradoEn": null
+        }
+      },
+      {
+        "accion": "confirmarPorteria",
+        "args": [
+          "REGIONAL",
+          "PAS001"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PAS005",
+          "estado": "EN_PASARELA",
+          "registradoEn": 440
+        }
+      }
+    ]
+  },
+  {
+    "id": "08",
+    "titulo": "Sale sin estacionar: no recibe celda y conserva su puesto",
+    "datos": {
+      "nCeldas": 4,
+      "iniciales": [
+        {
+          "placa": "AAA111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        },
+        {
+          "placa": "BBB222",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-02"
+        },
+        {
+          "placa": "CCC333",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-03"
+        },
+        {
+          "placa": "DDD444",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-04"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "NEC101",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 1
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "SNE102",
+          "conductor": "Beto",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "marcarSaleSinEstacionar",
+        "args": [
+          "SNE102",
+          true
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "AAA111"
+      },
+      {
+        "verificar": {
+          "placa": "NEC101",
+          "celdaId": "A-01"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "SNE102",
+          "celdaId": null
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "NEC103",
+          "conductor": "Carla",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "BBB222"
+      },
+      {
+        "verificar": {
+          "placa": "NEC103",
+          "celdaId": "A-02"
+        }
+      },
+      {
+        "accion": "confirmarPorteria",
+        "args": [
+          "REGIONAL",
+          "SNE102"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Este vehículo aún no es el primero de la fila."
+        }
+      }
+    ]
+  },
+  {
+    "id": "09",
+    "titulo": "Portería: sin celda y placa ajena",
+    "datos": {
+      "nCeldas": 1,
+      "iniciales": [
+        {
+          "placa": "OCC111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "SIN101",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "confirmarPorteria",
+        "args": [
+          "REGIONAL",
+          "SIN101"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Aún no tiene celda asignada. Debe esperar."
+        }
+      },
+      {
+        "accion": "confirmarPorteria",
+        "args": [
+          "REGIONAL",
+          "ZZZ999"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Placa no registrada en esta pasarela."
+        }
+      }
+    ]
+  },
+  {
+    "id": "10",
+    "titulo": "Motos: sin bloqueo cruzado",
+    "datos": {
+      "nCeldas": 1,
+      "nCeldasMoto": 1
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "MOT12A",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "MOT12A",
+          "celdaId": "M-01"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "CAR123",
+          "conductor": "Beto",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "CAR123",
+          "celdaId": "A-01"
+        }
+      }
+    ]
+  },
+  {
+    "id": "11",
+    "titulo": "Preferencia de celda cumplida",
+    "datos": {
+      "nCeldas": 3
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PRE101",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "preferencia": {
+            "celdaId": "A-03"
+          }
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PRE101",
+          "celdaId": "A-03",
+          "preferenciaCumplida": "celda"
+        }
+      }
+    ]
+  },
+  {
+    "id": "12",
+    "titulo": "Preferencia de parqueadero cumplida",
+    "datos": {
+      "nCeldas": 1,
+      "nCeldasOtra": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PRE102",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "preferencia": {
+            "zona": "I"
+          }
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PRE102",
+          "celdaId": "I-01",
+          "preferenciaCumplida": "zona"
+        }
+      }
+    ]
+  },
+  {
+    "id": "13",
+    "titulo": "Preferencia no cumplida: no pierde el turno",
+    "datos": {
+      "nCeldas": 3,
+      "iniciales": [
+        {
+          "placa": "OCC111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PRE103",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "preferencia": {
+            "celdaId": "A-01"
+          }
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PRE103",
+          "celdaId": "A-02",
+          "preferenciaCumplida": "zona"
+        }
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PRE104",
+          "conductor": "Beto",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PRE104",
+          "celdaId": "A-03"
+        }
+      }
+    ]
+  },
+  {
+    "id": "14",
+    "titulo": "Valet feliz completo: pagar → aceptar → recibir → inspección → ubicación → PIN",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "LAU123",
+          "conductor": "Laura",
+          "acceso": "REGIONAL",
+          "valet": true
+        }
+      },
+      {
+        "accion": "valetPagar",
+        "args": [
+          "LAU123",
+          "TARJETA"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetAceptar",
+        "args": [
+          "LAU123",
+          "Luisa Mejía"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetEntregar",
+        "args": "LAU123",
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetInspeccionar",
+        "args": [
+          "LAU123",
+          {
+            "combustible": "3/4",
+            "km": 48320,
+            "novedades": "Rayón leve",
+            "fotos": [
+              {
+                "vista": "Frontal",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              },
+              {
+                "vista": "Tablero",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              }
+            ]
+          }
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "confirmarPorteria",
+        "args": [
+          "REGIONAL",
+          "LAU123"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "estacionar",
+        "args": "LAU123",
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetRegistrarUbicacion",
+        "args": [
+          "LAU123",
+          {
+            "nota": "Sótano, junto a la columna 12"
+          }
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "LAU123",
+          "valet.estado": "LLAVES_EN_CUSTODIA",
+          "valet.ubicacion.nota": "Sótano, junto a la columna 12"
+        }
+      },
+      {
+        "accion": "valetSolicitarCarro",
+        "args": "LAU123",
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 2
+      },
+      {
+        "verificar": {
+          "placa": "LAU123",
+          "valet.estado": "EN_TRASLADO"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 2
+      },
+      {
+        "verificar": {
+          "placa": "LAU123",
+          "valet.estado": "LISTO_EN_BAHIA"
+        }
+      },
+      {
+        "accion": "valetEntregarCliente",
+        "args": [
+          "LAU123",
+          "0000"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "PIN incorrecto. Pídele al estudiante el código de 4 dígitos."
+        }
+      },
+      {
+        "accion": "valetEntregarCliente",
+        "args": [
+          "LAU123",
+          {
+            "$pin": "LAU123"
+          }
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "LAU123",
+          "valet.estado": "DEVUELTO",
+          "celdaId": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "15",
+    "titulo": "Valet: errores de orden y validación",
+    "datos": {
+      "nCeldas": 2
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "ERR123",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "valet": true
+        }
+      },
+      {
+        "accion": "valetPagar",
+        "args": [
+          "ERR123",
+          "RECHAZO"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Pago rechazado. Intenta con otro método."
+        }
+      },
+      {
+        "accion": "valetEntregar",
+        "args": "ERR123",
+        "espera": {
+          "ok": false,
+          "error": "Primero completa el pago del valet."
+        }
+      },
+      {
+        "accion": "valetPagar",
+        "args": [
+          "ERR123",
+          "NEQUI"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetEntregar",
+        "args": "ERR123",
+        "espera": {
+          "ok": false,
+          "error": "Primero un operador debe aceptar el servicio."
+        }
+      },
+      {
+        "accion": "valetAceptar",
+        "args": [
+          "ERR123",
+          "Carlos Restrepo"
+        ],
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetAceptar",
+        "args": [
+          "ERR123",
+          "Luisa Mejía"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Ese servicio ya fue aceptado por Carlos Restrepo."
+        }
+      },
+      {
+        "accion": "valetAceptar",
+        "args": [
+          "ERR123",
+          "Pedro X"
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Operador desconocido."
+        }
+      },
+      {
+        "accion": "valetEntregar",
+        "args": "ERR123",
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "accion": "valetInspeccionar",
+        "args": [
+          "ERR123",
+          {
+            "combustible": "1/2",
+            "km": 10,
+            "fotos": [
+              {
+                "vista": "Frontal",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              },
+              {
+                "vista": "Trasera",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              },
+              {
+                "vista": "Lat. izq.",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              },
+              {
+                "vista": "Lat. der.",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              },
+              {
+                "vista": "Tablero",
+                "dataUrl": "data:image/jpeg;base64,AAAA"
+              }
+            ]
+          }
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Máximo 4 fotos por inspección."
+        }
+      },
+      {
+        "accion": "valetRegistrarUbicacion",
+        "args": [
+          "ERR123",
+          {
+            "nota": "x"
+          }
+        ],
+        "espera": {
+          "ok": false,
+          "error": "Solo se registra la ubicación cuando el carro ya está estacionado."
+        }
+      }
+    ]
+  },
+  {
+    "id": "16",
+    "titulo": "Valet sin prioridad: compite con su hora de registro",
+    "datos": {
+      "nCeldas": 2,
+      "iniciales": [
+        {
+          "placa": "AAA111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        },
+        {
+          "placa": "BBB222",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-02"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "NOR101",
+          "conductor": "Ana",
+          "acceso": "REGIONAL"
+        }
+      },
+      {
+        "accion": "avanzar",
+        "args": 1
+      },
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "VAL101",
+          "conductor": "Beto",
+          "acceso": "REGIONAL",
+          "valet": true
+        }
+      },
+      {
+        "accion": "valetPagar",
+        "args": [
+          "VAL101",
+          "PSE"
+        ]
+      },
+      {
+        "accion": "valetAceptar",
+        "args": [
+          "VAL101",
+          "Andrés Gil"
+        ]
+      },
+      {
+        "accion": "salir",
+        "args": "AAA111"
+      },
+      {
+        "verificar": {
+          "placa": "NOR101",
+          "celdaId": "A-01"
+        }
+      },
+      {
+        "verificar": {
+          "placa": "VAL101",
+          "celdaId": null
+        }
+      },
+      {
+        "accion": "salir",
+        "args": "BBB222"
+      },
+      {
+        "verificar": {
+          "placa": "VAL101",
+          "celdaId": "A-02"
+        }
+      }
+    ]
+  },
+  {
+    "id": "17",
+    "titulo": "Determinismo del guion completo (`datos: demo`, 60 min)",
+    "datos": "demo",
+    "pasos": [
+      {
+        "accion": "__determinismo",
+        "minutos": 60
+      }
+    ]
+  },
+  {
+    "id": "18",
+    "titulo": "Preferencia no cumplida: ni celda ni parqueadero disponibles",
+    "datos": {
+      "nCeldas": 2,
+      "iniciales": [
+        {
+          "placa": "OCC111",
+          "conductor": "Prueba",
+          "acceso": "REGIONAL",
+          "estado": "ESTACIONADO",
+          "celdaId": "A-01"
+        }
+      ]
+    },
+    "pasos": [
+      {
+        "accion": "llegar",
+        "args": {
+          "placa": "PRE105",
+          "conductor": "Ana",
+          "acceso": "REGIONAL",
+          "preferencia": {
+            "zona": "I"
+          }
+        },
+        "espera": {
+          "ok": true
+        }
+      },
+      {
+        "verificar": {
+          "placa": "PRE105",
+          "celdaId": "A-02",
+          "preferenciaCumplida": "no"
+        }
+      }
+    ]
+  }
+]
