@@ -174,6 +174,16 @@
           ${App.ACCESOS.map((a) => `<option value="${a}"${a === accesoElegido ? ' selected' : ''}>${App.NOMBRE_ACCESO[a]}</option>`).join('')}
         </select>
       </label>
+      <label class="${clases.etiqueta}"><span>Parqueadero preferido</span>
+        <select class="${clases.entrada}" data-campo="form.preferenciaZona">
+          <option value=""${!f.preferenciaZona && !f.preferenciaCelda ? ' selected' : ''}>Cualquiera</option>
+          <option value="N"${f.preferenciaZona === 'N' ? ' selected' : ''}>Principal</option>
+          <option value="I"${f.preferenciaZona === 'I' ? ' selected' : ''}>Ingeniería</option>
+          <option value="G"${f.preferenciaZona === 'G' ? ' selected' : ''}>Idiomas</option>
+        </select>
+      </label>
+      ${f.preferenciaCelda ? `<p class="${clases.nota}">Celda preferida: <b>${esc(f.preferenciaCelda)}</b> · <button type="button" class="underline" data-accion="quitarPreferenciaCelda">quitar</button></p>` : ''}
+      <p class="${clases.nota}">Tu preferencia no te adelanta en la fila: cuando llegue tu turno, te damos esa celda o ese parqueadero si están libres; si no, la más cercana.</p>
       <label class="${clases.etiqueta}"><span>¿A qué hora es tu clase? (opcional)</span>
         <input type="time" name="horaClase" data-campo="form.horaClase" value="${esc(f.horaClase)}" class="${clases.entrada}"${f.errores.horaClase ? ' aria-invalid="true" aria-describedby="error-horaClase"' : ''}>
       </label>
@@ -191,6 +201,16 @@
       <p class="text-body-lg text-on-surface">${esc(window.ParkEngine.POLITICA_TEXTO)}</p>
     </section>`;
   }
+
+  App.acciones.quitarPreferenciaCelda = () => App.setSub('form', { preferenciaCelda: '' });
+
+  // Tocar una celda libre en el mapa de Inicio permite preferirla (no la reserva).
+  App.acciones.preferirCelda = function () {
+    const id = App.ui.celdaPreferida;
+    if (!id) return;
+    App.setSub('form', { preferenciaCelda: id });
+    App.toast('ok', 'Celda ' + id + ' agregada como preferencia. No queda reservada.');
+  };
 
   App.pantallas.inicio = function () {
     const r = App.engine.resumen();
@@ -267,7 +287,10 @@
       conductor: f.nombre.trim(),
       acceso,
       horaClase: minutosDe(f.horaClase),
-      valet: f.valet
+      valet: f.valet,
+      preferencia: (f.preferenciaZona || f.preferenciaCelda)
+        ? { zona: f.preferenciaZona || null, celdaId: f.preferenciaCelda || null }
+        : null
     });
     if (!App.resultado(r)) return;
     App.toast('ok', mensajeRegistro(r.vehiculo));
@@ -279,7 +302,7 @@
       fijada: true,
       maxPosicion,
       tab: f.valet ? 'valet' : 'turno',
-      form: { ...f, placa: '', nombre: '', horaClase: '', valet: false, errores: {} }
+      form: { ...f, placa: '', nombre: '', horaClase: '', valet: false, preferenciaZona: '', preferenciaCelda: '', errores: {} }
     });
   };
 })();
