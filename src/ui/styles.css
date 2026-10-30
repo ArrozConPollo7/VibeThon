@@ -214,6 +214,22 @@ body {
 .muestra--eco { background: var(--pm-eco); }
 .muestra--prov { background: var(--pm-prov); }
 
+/* Fila en vivo sobre el mapa: solo se animan transform y opacity. */
+.ficha { transition: transform 500ms ease, opacity 300ms ease; }
+.ficha-cuerpo { fill: rgb(var(--primary-container)); stroke: rgb(var(--surface-container-lowest)); stroke-width: 2; }
+.ficha-anillo { fill: none; stroke: rgb(var(--secondary-container)); stroke-width: 2.5; opacity: 0; }
+.ficha-tu { display: none; text-anchor: middle; font: 700 15px 'Inter', system-ui, sans-serif; fill: rgb(var(--on-surface)); paint-order: stroke; stroke: rgb(var(--surface-container-lowest)); stroke-width: 4px; }
+.ficha--activa .ficha-cuerpo { fill: rgb(var(--secondary-container)); stroke: #131b2e; }
+.ficha--activa .ficha-anillo { animation: late 1.6s ease-in-out infinite; opacity: 1; }
+.ficha--activa .ficha-tu { display: block; }
+.ficha--valet .ficha-cuerpo { stroke: #fed01b; stroke-width: 3; }
+.ficha--sale .ficha-cuerpo { stroke-dasharray: 3 2; stroke-width: 3; }
+.fila-corte { display: none; }
+.fila-corte--visible { display: block; }
+.fila-corte line { stroke: rgb(var(--mal-icono)); stroke-width: 2.5; stroke-dasharray: 5 3; }
+.fila-corte text, .fila-mas { font: 700 14px 'Inter', system-ui, sans-serif; fill: rgb(var(--on-surface)); paint-order: stroke; stroke: rgb(var(--surface-container-lowest)); stroke-width: 4px; }
+.fila-mas { text-anchor: middle; }
+
 /* Código simulado: siempre oscuro sobre blanco para que se lea en ambos temas. */
 .codigo rect { fill: #131b2e; }
 .codigo .codigo-fondo { fill: #fff; }

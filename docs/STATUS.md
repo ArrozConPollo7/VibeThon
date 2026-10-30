@@ -248,3 +248,21 @@ Recorrido automatizado en Chrome sobre `file://` y sin red: 29 de 29 comprobacio
 - El QR no tiene la cuenta regresiva "anti-captura": el código es simulado y fijo por placa.
 - El aviso de producción del Tailwind local se filtra en `index.html`: sin eso, §7.1 no daría consola limpia.
 - Mi turno enfoca el parqueadero de la celda con `focusLot`, como pide §5; "Ruta completa" abre todo el campus cuando la ruta cruza parqueaderos.
+
+## Estado TAREA 09
+
+Mapa de consulta en Inicio y fila en vivo sobre el mapa. Archivos: `mapa.js`, `inicio.js`, `turno.js`, `styles.css`; `operacion.js` no necesitó cambios porque su mapa recibe la capa automáticamente. Respaldo: tag `ui-v3`.
+
+### Qué cambió
+- Inicio: mapa de los 3 parqueaderos, solo para consultar, con "N libres de M" por parqueadero. Tocar una celda muestra id, parqueadero y estado, sin reservar.
+- Capa `fila-viva` en cada mapa: una ficha por vehículo en pasarela y afuera, máximo 10 por acceso y "+N" si hay más. Línea "Pasarela llena" cuando hay carros afuera.
+- Al pasar portería, la ficha recorre `ruta().puntos` y se desvanece. Si sale sin estacionar, se aleja por la vía.
+- Mi turno: mientras espera, mapa enfocado en su acceso con la ficha marcada "Tú".
+- `mapa.js` solo agrega; `App.mapas` suma `huecoFila`.
+
+### Decisiones
+- Las vías siguen los trazos reales del plano. Las Vegas va por la Avenida Las Vegas hacia el noreste, no hacia el oeste como sugería la tarea: al oeste las fichas quedaban sobre el parqueadero de Ingeniería.
+- En Inicio las fichas son 1,4 veces más grandes porque el campus completo cabe en 280 px.
+
+### Verificación §4
+Chrome sobre `file://` y sin red. TAREA 09: 12 de 12. TAREA 05 §7: 29 de 29, con Play x10 de 15 s en esta corrida. Motor: 14 de 14. Se revisaron capturas de Regional y Las Vegas, en claro y en oscuro.

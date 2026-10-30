@@ -111,6 +111,16 @@
     </details>`;
   }
 
+  function mapaFila(v) {
+    const lote = App.loteAcceso(v.acceso);
+    if (!lote) return '';
+    return `<section class="${clases.tarjeta}">
+      <h2 class="${clases.titulo}">Tu lugar en la fila</h2>
+      ${App.mapas.huecoFila('celular', `Mapa del acceso ${App.NOMBRE_ACCESO[v.acceso]} con la fila en vivo`, lote)}
+      <p class="${clases.nota}">"Tú" marca tu carro en la fila de ${App.NOMBRE_ACCESO[v.acceso]}.</p>
+    </section>`;
+  }
+
   function pantallaEspera(v) {
     const p = App.engine.posicion(v.placa) || { delante: 0, detras: 0, posicionEnPasarela: null };
     const afuera = v.estado === 'AFUERA';
@@ -128,6 +138,7 @@
       ${tiempoTranscurrido(v)}
       ${ticket(v, 'bg-secondary-container', cuerpo)}
       ${alertaClase(v)}
+      ${mapaFila(v)}
       ${esperaBloque(v, p)}
       ${interruptorSalida(v)}
       ${politica()}

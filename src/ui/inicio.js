@@ -9,6 +9,16 @@
     ],
     MOTO: [{ zona: 'M', detalle: 'Celdas de moto', ico: 'two_wheeler' }]
   };
+  const LOTES = [
+    { zona: 'N', texto: 'Principal' },
+    { zona: 'I', texto: 'Ingeniería' },
+    { zona: 'G', texto: 'Idiomas' }
+  ];
+  const ESTADOS_CELDA = {
+    LIBRE: { chip: 'libre', texto: 'Libre' },
+    RESERVADA: { chip: 'reservada', texto: 'Reservada' },
+    OCUPADA: { chip: 'ocupada', texto: 'Ocupada' }
+  };
 
   const tipoVista = () => App.ui.tipoVista || 'CARRO';
 
@@ -90,6 +100,35 @@
     </section>`;
   }
 
+  function infoCelda(id) {
+    const celda = id && App.celdas().find((c) => c.id === id);
+    if (!celda) return `<p class="${clases.nota}">Toca una celda para ver su estado.</p>`;
+    const estado = ESTADOS_CELDA[celda.estado];
+    return `<div class="flex flex-wrap items-center gap-2 bg-surface-container-low rounded-xl p-space-sm" aria-live="polite">
+      <b class="text-label-lg text-on-surface">${esc(celda.id)}</b>
+      <span class="${clases.nota}">${esc(App.nombreZona(celda.zona))}</span>
+      ${App.chip(estado.chip, estado.texto)}
+    </div>`;
+  }
+
+  function mapaCampus() {
+    const boton = (l) => {
+      const c = conteo(celdasDe('CARRO', l.zona));
+      return `<button type="button" class="${clases.secundario} flex-col !gap-0" data-accion="vistaInicio" data-lote="${l.zona}"><span>${l.texto}</span><span class="text-label-sm text-on-surface-variant">${c.libres} ${c.libres === 1 ? 'libre' : 'libres'} de ${c.total}</span></button>`;
+    };
+    return `<section class="${clases.tarjeta}" aria-label="Mapa del parqueadero">
+      <h2 class="${clases.titulo}">Mapa del parqueadero</h2>
+      <p class="${clases.nota}">Las celdas se asignan en orden de llegada para que sea justo entre accesos. Aquí ves cómo está el parqueadero ahora.</p>
+      ${App.mapas.hueco('inicio', 'Mapa de consulta de los tres parqueaderos del campus')}
+      <div class="grid grid-cols-2 gap-space-xs" role="group" aria-label="Vista del mapa">
+        ${LOTES.map(boton).join('')}
+        <button type="button" class="${clases.secundario}" data-accion="vistaInicio">Ver todo</button>
+      </div>
+      ${App.mapas.leyenda()}
+      ${infoCelda(App.ui.celdaInicio)}
+    </section>`;
+  }
+
   function graficoHoras(r) {
     const horaActual = Math.floor(App.engine.state.clock / 60);
     const datos = App.historico(r.historico);
@@ -164,6 +203,7 @@
       ${ocupacion(tipo)}
       ${selectorTipo(tipo)}
       ${sectores(tipo, r)}
+      ${mapaCampus()}
       ${graficoHoras(r)}
       ${tips()}
       ${formulario(accesoElegido)}
@@ -198,6 +238,7 @@
   }
 
   App.acciones.elegirTipo = (el) => App.set({ tipoVista: el.dataset.tipo });
+  App.acciones.vistaInicio = (el) => App.mapas.vista('inicio', el.dataset.lote);
 
   App.acciones.irFormulario = function () {
     const campo = document.querySelector('#form-llegada [name="placa"]');
