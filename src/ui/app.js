@@ -5,6 +5,7 @@
     { id: 'conductor', texto: 'Conductor' },
     { id: 'valet', texto: 'Valet' },
     { id: 'operacion', texto: 'Portería y operación' },
+    { id: 'valetOperador', texto: 'Valet (operador)' },
     { id: 'demo', texto: 'Modo demo' }
   ];
   const TABS = [
@@ -138,13 +139,29 @@
     </div>`;
   }
 
+  // Modo demo: una sola pantalla para el jurado (estudiante + operador).
+  function selectorPanelDemo() {
+    const opcion = (id, texto) => {
+      const activa = (App.ui.panelDemo === 'valetOperador') === (id === 'valetOperador');
+      return `<button type="button" class="min-h-[44px] px-3 rounded-xl text-label-md ${activa ? 'bg-primary-container text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant'}" data-accion="elegirPanelDemo" data-panel="${id}"${activa ? ' aria-current="true"' : ''}>${texto}</button>`;
+    };
+    return `<div class="flex flex-wrap gap-2 items-center" data-key="selector-panel-demo" role="group" aria-label="Panel del operador">
+      <span class="text-label-md text-on-surface-variant">Panel derecho:</span>
+      ${opcion('operacion', 'Portería y operación')}${opcion('valetOperador', 'Valet (operador)')}
+    </div>`;
+  }
+
+  App.acciones.elegirPanelDemo = (el) => App.set({ panelDemo: el.dataset.panel });
+
   function cuerpo() {
     const { vista } = App.ui;
     if (vista === 'operacion') return `<main class="max-w-6xl mx-auto w-full p-margin">${App.pantallas.operacion()}</main>`;
+    if (vista === 'valetOperador') return `<main class="max-w-6xl mx-auto w-full p-margin">${App.pantallas.valetOperador()}</main>`;
     if (vista === 'demo') {
       return `<main class="max-w-[1400px] mx-auto w-full p-margin flex flex-col gap-space-md">
         ${guia()}
-        <div class="flex flex-col lg:flex-row gap-space-md items-start">${celular()}<div class="flex-1 min-w-0 w-full">${App.pantallas.operacion()}</div></div>
+        ${selectorPanelDemo()}
+        <div class="flex flex-col lg:flex-row gap-space-md items-start">${celular()}<div class="flex-1 min-w-0 w-full">${App.ui.panelDemo === 'valetOperador' ? App.pantallas.valetOperador() : App.pantallas.operacion()}</div></div>
       </main>`;
     }
     return `<main class="w-full">${celular()}<div class="max-w-[540px] mx-auto p-margin">${guia()}</div></main>`;

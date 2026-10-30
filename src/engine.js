@@ -11,6 +11,9 @@
   var MINUTOS_CAMINATA = 5;    // de la celda al salón
   var MINUTOS_HASTA_CELDA = 2; // recorrido portería → celda
   var CASILLEROS = 30;
+  var OPERADORES_VALET = ['Carlos Restrepo', 'Luisa Mejía', 'Andrés Gil'];
+  var COMBUSTIBLES = ['vacío', '1/4', '1/2', '3/4', 'lleno'];
+  var TARIFA_VALET = 8000;
   var RE_CARRO = /^[A-Z]{3}[0-9]{3}$/;
   var RE_MOTO = /^[A-Z]{3}[0-9]{2}[A-Z]$/;
   var RE_NOMBRE = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,40}$/;
@@ -685,6 +688,96 @@
     }
 
     // --- valet ---------------------------------------------------------
+    function cuatroDigitos() {
+      return String(Math.floor(rng() * 9000) + 1000);
+    }
+
+    function valetInspeccionar(placa, datos) {
+      datos = datos || {};
+      var v = porPlaca(placa);
+      if (!v) return fallo('Placa no registrada: ' + placa + '.');
+      if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
+      if (v.valet.estado !== 'ENTREGADO_A_VALET' && v.valet.estado !== 'EN_FILA') {
+        return fallo('Solo se inspecciona al recibir el vehículo (estado ' + v.valet.estado + ').');
+      }
+      var combustible = String(datos.combustible == null ? '' : datos.combustible).trim();
+      if (COMBUSTIBLES.indexOf(combustible) < 0) {
+        return fallo('Combustible inválido: usa ' + COMBUSTIBLES.join(', ') + '.');
+      }
+      var km = Number(datos.km);
+      if (!isFinite(km) || km < 0) {
+        return fallo('Los kilómetros deben ser un número mayor o igual a 0.');
+      }
+      var novedades = String(datos.novedades == null ? '' : datos.novedades).trim();
+      if (novedades.length > 140) {
+        return fallo('Las novedades no pueden pasar de 140 caracteres.');
+      }
+      var fotos = Number(datos.fotos == null ? 0 : datos.fotos);
+      if (!isFinite(fotos) || fotos < 0 || fotos > 4 || Math.floor(fotos) !== fotos) {
+        return fallo('Las fotos deben ser un número entero entre 0 y 4.');
+      }
+      v.valet.inspeccion = {
+        hora: state.clock,
+        combustible: combustible,
+        km: km,
+        novedades: novedades,
+        fotos: fotos
+      };
+      pushEvento('VALET_INSPECCION', 'Inspección de ' + placa + ' registrada: ' + combustible + ', ' + km + ' km' +
+        (novedades ? ', novedades: ' + novedades : ', sin novedades') + ' (' + fotos + '/4 fotos).',
+        { placa: placa, combustible: combustible, km: km, fotos: fotos });
+      notificar();
+      return { ok: true, inspeccion: clonar(v.valet.inspeccion) };
+    }
+
+    function valetEntregarCliente(placa, pin) {
+      var v = porPlaca(placa);
+      if (!v) return fallo('Placa no registrada: ' + placa + '.');
+      if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
+      if (v.valet.estado !== 'LISTO_EN_BAHIA') {
+        return fallo('El vehículo todavía no está listo en bahía (estado ' + v.valet.estado + ').');
+      }
+      if (String(pin == null ? '' : pin).trim() !== String(v.valet.pin)) {
+        return fallo('PIN incorrecto. Pídele al estudiante el código de 4 dígitos.');
+      }
+      valetDevolver(placa);
+      v.valet.estado = 'DEVUELTO';
+      pushEvento('VALET_ENTREGADO_CLIENTE', 'Vehículo ' + placa + ' entregado al estudiante con PIN correcto.',
+        { placa: placa });
+      notificar();
+      return { ok: true };
+    }
+
+    function valetListar() {
+      var orden = ['PAGADO', 'ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO', 'ESTACIONADO',
+        'LLAVES_EN_CUSTODIA', 'SOLICITADO', 'EN_TRASLADO', 'LISTO_EN_BAHIA', 'DEVUELTO'];
+      return vehiculos().filter(function (v) { return !!v.valet; })
+        .sort(function (a, b) {
+          var d = orden.indexOf(a.valet.estado) - orden.indexOf(b.valet.estado);
+          return d !== 0 ? d : ((a.valet.pagadoEn || 0) - (b.valet.pagadoEn || 0));
+        })
+        .map(function (v) {
+          var celda = celdaDe(v);
+          return {
+            placa: v.placa,
+            conductor: v.conductor,
+            estado: v.valet.estado,
+            estadoVehiculo: v.estado,
+            acceso: v.acceso,
+            ticket: v.valet.ticket || null,
+            operador: v.valet.operador || null,
+            tarifa: v.valet.tarifa || null,
+            celdaId: v.celdaId,
+            zona: celda ? celda.zona : null,
+            nombreZona: celda && datosBase.zonas[celda.zona] ? datosBase.zonas[celda.zona].nombre : null,
+            casillero: v.valet.casillero || null,
+            inspeccion: v.valet.inspeccion ? clonar(v.valet.inspeccion) : null,
+            pagadoEn: v.valet.pagadoEn != null ? v.valet.pagadoEn : null,
+            enCustodiaMin: v.valet.pagadoEn != null ? (state.clock - v.valet.pagadoEn) : null
+          };
+        });
+    }
+
     function casilleroLibre() {
       var usados = {};
       vehiculos().forEach(function (v) {
@@ -733,8 +826,14 @@
       v.valet.pagado = true;
       v.valet.estado = 'PAGADO';
       v.valet.metodo = metodo || 'EFECTIVO';
-      pushEvento('VALET_PAGADO', 'Valet pagado para ' + placa + ' con ' + v.valet.metodo + '.',
-        { placa: placa, metodo: v.valet.metodo });
+      v.valet.pagadoEn = state.clock;
+      v.valet.tarifa = TARIFA_VALET;
+      v.valet.ticket = v.valet.ticket || ('VAL-' + cuatroDigitos());
+      v.valet.pin = v.valet.pin || cuatroDigitos();
+      v.valet.operador = v.valet.operador || OPERADORES_VALET[Math.floor(rng() * OPERADORES_VALET.length)];
+      pushEvento('VALET_PAGADO', 'Valet pagado para ' + placa + ' con ' + v.valet.metodo +
+        ' — ticket ' + v.valet.ticket + ', operador ' + v.valet.operador + '.',
+        { placa: placa, metodo: v.valet.metodo, ticket: v.valet.ticket, operador: v.valet.operador, tarifa: TARIFA_VALET });
       notificar();
       return { ok: true, valet: clonar(v.valet) };
     }
@@ -768,7 +867,8 @@
         return fallo('El valet de ' + placa + ' todavía no tiene las llaves en custodia (estado ' + v.valet.estado + ').');
       }
       v.valet.estado = 'SOLICITADO';
-      v.valet.devolverEn = state.clock + MINUTOS_HASTA_CELDA;
+      v.valet.devolverEn = state.clock + 2;      // 2 min de traslado interno
+      v.valet.trasladoEn = null;
       pushEvento('VALET_SOLICITADO', 'El cliente de ' + placa + ' solicitó su carro (casillero ' + v.valet.casillero + ').',
         { placa: placa, casillero: v.valet.casillero });
       notificar();
@@ -779,7 +879,7 @@
       var v = porPlaca(placa);
       if (!v) return fallo('Placa no registrada: ' + placa + '.');
       if (!v.valet) return fallo('La placa ' + placa + ' no tiene servicio de valet.');
-      if (v.valet.estado !== 'SOLICITADO') {
+      if (['SOLICITADO', 'EN_TRASLADO', 'LISTO_EN_BAHIA'].indexOf(v.valet.estado) < 0) {
         return fallo('El carro de ' + placa + ' no está solicitado.');
       }
       var casillero = v.valet.casillero;
@@ -807,9 +907,18 @@
 
     function devolucionesValet() {
       vehiculos().forEach(function (v) {
-        if (v.valet && v.valet.estado === 'SOLICITADO' && v.valet.devolverEn != null &&
-            state.clock >= v.valet.devolverEn) {
-          valetDevolver(v.placa);
+        if (!v.valet) return;
+        if (v.valet.estado === 'SOLICITADO' && v.valet.devolverEn != null && state.clock >= v.valet.devolverEn) {
+          v.valet.estado = 'EN_TRASLADO';
+          v.valet.trasladoEn = state.clock + 2;   // 2 min más hasta la bahía
+          pushEvento('VALET_TRASLADO', 'El operador saca el vehículo ' + v.placa +
+            '; va en traslado a la bahía.', { placa: v.placa, casillero: v.valet.casillero });
+        } else if (v.valet.estado === 'EN_TRASLADO' && v.valet.trasladoEn != null &&
+                   state.clock >= v.valet.trasladoEn) {
+          v.valet.estado = 'LISTO_EN_BAHIA';
+          v.valet.trasladoEn = null;
+          pushEvento('VALET_LISTO', 'Vehículo ' + v.placa + ' listo en bahía; esperando el PIN del estudiante.',
+            { placa: v.placa });
         }
       });
     }
@@ -1028,6 +1137,9 @@
       valetEntregar: valetEntregar,
       valetSolicitarCarro: valetSolicitarCarro,
       valetDevolver: valetDevolver,
+      valetInspeccionar: valetInspeccionar,
+      valetEntregarCliente: valetEntregarCliente,
+      valetListar: valetListar,
       avanzar: avanzar,
       generarLlegada: generarLlegada,
       reiniciar: reiniciar,

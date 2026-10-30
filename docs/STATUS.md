@@ -266,3 +266,52 @@ Mapa de consulta en Inicio y fila en vivo sobre el mapa. Archivos: `mapa.js`, `i
 
 ### Verificación §4
 Chrome sobre `file://` y sin red. TAREA 09: 12 de 12. TAREA 05 §7: 29 de 29, con Play x10 de 15 s en esta corrida. Motor: 14 de 14. Se revisaron capturas de Regional y Las Vegas, en claro y en oscuro.
+
+## Estado TAREA 08
+
+Motor: `src/engine.js` (solo se agregó; R1–R7 y el reparto intactos). UI: `src/ui/valet-operador.js` nueva +
+ganchos en `app.js` e `index.html` + ajustes en `valet.js`. No se tocó `mapa.js`, `inicio.js`, `turno.js`,
+`operacion.js` ni `styles.css` (TAREA 09 de Claude Code).
+
+| Función nueva / cambiada | Estado |
+|---|---|
+| `valetPagar` → `ticket` `VAL-XXXX`, `pin`, `tarifa 8000`, `operador` (lista fija, con el `rng` semilla) | ✅ |
+| `valetInspeccionar(placa, {combustible, km, novedades, fotos})` + evento `VALET_INSPECCION` | ✅ |
+| `valetSolicitarCarro` → `EN_TRASLADO` (2 min) → `LISTO_EN_BAHIA` (2 min más); ya no se devuelve solo | ✅ |
+| `valetEntregarCliente(placa, pin)` (PIN incorrecto con el mensaje pedido) | ✅ |
+| `valetListar()` (sin `pin`, con celda/zona/nombreZona/casillero/inspección, ordenado por estado y hora) | ✅ |
+
+### Verificación §4 (30-oct, a las 16:20)
+
+1. **`node tests/engine.test.js` → 17/17** ✅ (las 14 anteriores siguen pasando; nuevas: inspección, entrega con PIN
+   y `valetListar`).
+2. **Doble clic en `index.html`** ✅ `file://` sin internet, consola sin errores (`window.__errs` vacío) y sin badge
+   "Motor de prueba".
+3. **Estudiante `LAU123` con valet** ✅ pago aprobado con `TARJETA`; el ticket muestra `VAL-8916`, operador
+   `Luisa Mejía` y `$8.000` reales del motor. El rechazo (`RECHAZO`) está cubierto por la prueba 8; en la UI usa el
+   mismo `valetPagar` que ya existía.
+4. **Operador recibe e inspecciona** ✅ botón "Recibir vehículo" → `valetEntregar` (`EN_FILA`); km `-5` →
+   "Los kilómetros deben ser un número mayor o igual a 0."; inspección válida (`3/4`, 48.320 km, novedades, 4/4
+   fotos) → guardada y visible en el detalle. El bloque "Inspección al recibir" quedó en `valet.js` para el
+   estudiante (no recorrí ese clic completo: el estudiante no estaba seleccionado en la vista).
+5. **Play hasta tener celda** ✅ `LAU123` recibió `I-040` (parqueadero de Ingeniería, aunque entró por Regional),
+   mapa montado en el detalle (`[data-mapa]` = 1), "Caja de llaves 1" y estado `LLAVES_EN_CUSTODIA`. El botón
+   "Confirmar estacionado" aparece solo cuando el carro está `EN_RECORRIDO`; en esta corrida el paso automático de
+   `avanzar()` lo estacionó antes, así que el botón no se pulsó (el camino manual queda disponible).
+6. **Solicitar → traslado → bahía → PIN** ✅ a los 2 min `EN_TRASLADO`, a los 4 min `LISTO_EN_BAHIA`; PIN `0000` →
+   "PIN incorrecto. Pídele al estudiante el código de 4 dígitos."; PIN real → `DEVUELTO`, casillero liberado y la
+   celda vuelve a LIBRE (`celdas con LAU123` = 0, libres +1).
+7. **Flujo sin valet** ✅ las 14 pruebas previas pasan y no se modificó `operacion.js` ni el armazón; la vista
+   "Portería y operación" sigue renderizando en el mismo `index.html`.
+8. **Oscuro + A++ a 390 px** ⏳ no verificado en esta corrida (queda para la revisión de Claude Code).
+
+**Desviaciones / notas**
+
+- El `<select>` de vista usa `valetOperador` como id (la vista "Valet" del estudiante ya existía con `valet`).
+- La inspección cuenta las casillas marcadas (frontal/trasera/lat. izq./lat. der.) como `fotos`, con tope de 4;
+  "Tablero" es una foto extra que no suma (el motor rechaza más de 4).
+- En `valet.js` el PIN ya no se deriva de la placa: si el motor no lo tiene (servicio sin pagar) se muestra `····`.
+- El mensaje de resultado de las acciones vive en `App.ui.valetOperador.mensaje` (no hay API de toasts reutilizable
+  sin tocar `app.js` más de lo necesario).
+- **Congelamiento:** se hizo a las 16:20, no a las 15:50, porque `TAREA_08` llegó al repo a las 15:31 (antes solo
+  existían TAREA_01…04). El motor quedó congelado a las 15:47 (`4044157`, 17/17).
