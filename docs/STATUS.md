@@ -217,3 +217,34 @@ Los datos salen del motor; lo que no existe en él se quitó en vez de simularlo
 
 ### Límite
 `src/engine.stub.js` no tiene las zonas reales: con el stub, Inicio mostraría los sectores vacíos. Con el motor real no se activa.
+
+## Estado TAREA 05
+
+Capa visual rehecha desde `design/` (Stitch). `engine.js`, `data.js`, `mapa-datos.js`, `tests/` y `parking-map.js` no se tocaron. Respaldo: tag `ui-v1`.
+
+### Qué cambió
+- `DESIGN.md` pasó a variables CSS (`styles.css`) y a `tailwind.config` (`src/ui/tailwind-config.js`); el modo oscuro solo redefine variables.
+- Todas las pantallas usan clases de Tailwind y los componentes de `src/ui/componentes.js`.
+- Íconos: Material Symbols local en `src/vendor/material-symbols.woff2` (subconjunto de 11 KB). Un ícono nuevo exige regenerar ese archivo.
+- Mapa con los 3 parqueaderos; sector Idiomas en Inicio y botón Idiomas en operación; leyenda con Proveedores.
+- En pantallas de menos de 1024 px la vista inicial es Conductor; en escritorio, Modo demo.
+
+### Verificación §7
+Recorrido automatizado en Chrome sobre `file://` y sin red: 29 de 29 comprobaciones. `tests/engine.test.js`: 14 de 14.
+1. Carga sin badge "Motor de prueba", sin peticiones externas y con consola limpia.
+2. `ABC123` en Regional: posición y espera, celda, mapa con zoom y ruta, portería, estacionar y salir.
+3. `RGL206` recibe `G-210`: el mapa enfoca Idiomas y los pasos lo nombran.
+4. Moto `ABC12D` con tarjeta de motos. `AB1234` da error en línea y la placa duplicada, error del motor.
+5. Valet con pago rechazado y luego aprobado, hasta casillero, devolución y calificación.
+6. Pasarela llena con "Generar llegada": "Esperas afuera".
+7. Play x10 durante 2 minutos reales: el mismo nodo SVG, cero cambios de estructura.
+8. Oscuro + A++ a 390 px: sin desbordes en 7 pantallas. Comparación visual contra `01-inicio` y `02-mi-turno`; las demás pantallas se revisaron por capturas propias, no lado a lado.
+
+### Decisiones y diferencias con Stitch
+- Los chips de estado usan los colores de `DESIGN.md` (verde, amarillo, gris); el HTML de Stitch los pinta azules.
+- Se mantiene fuera lo que el motor no tiene: Bicicleta, Carpooling, Bloque 26, conductor con nombre, fotos, tarifa, EafitPay. **Sigue pendiente confirmar el precio del valet ($8.000).**
+- El logo remoto de Stitch se reemplazó por el ícono `local_parking`, porque depende de internet.
+- La campana ahora funciona: muestra los eventos del conductor activo. El avatar es decorativo.
+- El QR no tiene la cuenta regresiva "anti-captura": el código es simulado y fijo por placa.
+- El aviso de producción del Tailwind local se filtra en `index.html`: sin eso, §7.1 no daría consola limpia.
+- Portería muestra el mapa con `focusLot` como pide §5; "Ruta completa" abre todo el campus cuando la ruta cruza parqueaderos.

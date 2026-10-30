@@ -52,6 +52,14 @@ Por cada prompt relevante, completar:
 - **Corrección del prompt:** tomar de Stitch el orden y el estilo, y los datos del motor. Conviene darle a Stitch el alcance del reto antes de generar.
 - **Cómo verificamos:** recorrido automatizado con el flujo de valet hasta la calificación, mapa, temas, A++ a 390 px y sin red, más comparación de capturas contra los diseños.
 
+## Prompt 5 — Frontend definitivo basado en Stitch
+- **Herramienta:** Claude (arquitecto) → Claude Code
+- **Objetivo:** rehacer toda la capa visual siguiendo `design/` y conectar cada dato y botón al motor.
+- **Prompt usado:** `docs/TAREA_05_FRONT_STITCH.md`.
+- **Resultado / fallo observado:** la versión anterior no siguió Stitch ni incluyó Idiomas.
+- **Corrección del prompt:** ese documento fija a `design/` como fuente de verdad, exige funcionar sin internet y los 3 parqueaderos, y define una vuelta atrás a `ui-v1`.
+- **Cómo verificamos:** §7 de la tarea con un recorrido automatizado en Chrome sin red (29 de 29), 14 pruebas del motor y comparación con capturas de Stitch. Ver `docs/STATUS.md`.
+
 ## Prompt 1B — Ajustes del contrato del motor
 - **Herramienta:** Claude (arquitecto) → Hermes
 - **Fallo observado:** la especificación original no fijaba el nombre global de los datos, la forma de `state` ni el flujo del valet, y tenía un error (3 en pasarela + 1 afuera con capacidad 4). Claude Code lo detectó al construir contra el contrato.

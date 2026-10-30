@@ -1,7 +1,14 @@
-// Panel de portería y operación (sección 7 de la tarea).
+// Panel de portería y operación: simulación, pasarelas, mapa, portería, justicia y registro.
 (function () {
-  const { esc, placaHTML, icono } = App;
+  const { esc, placaHTML, icono, clases } = App;
   const MAX_EVENTOS = 50;
+  const TEXTO_ESTADO = { LIBRE: 'libre', RESERVADA: 'reservada', OCUPADA: 'ocupada' };
+  const NOMBRE_ESTADO = { LIBRE: 'Libre', RESERVADA: 'Reservada', OCUPADA: 'Ocupada' };
+  const LOTES = [
+    { id: 'N', texto: 'Principal' },
+    { id: 'I', texto: 'Ingeniería' },
+    { id: 'G', texto: 'Idiomas' }
+  ];
 
   function etiquetaCarro(v) {
     if (v.valet && v.valet.estado !== 'SELECCIONADO' && !v.celdaId) return 'Valet';
@@ -11,72 +18,81 @@
   }
 
   function tarjetaCarro(v, primero) {
-    const estado = v.celdaId ? ' carro--celda' : v.saleSinEstacionar ? ' carro--sale' : '';
+    const borde = v.celdaId ? 'border-libre-punto' : v.saleSinEstacionar ? 'border-outline' : 'border-secondary-container';
     const hora = v.registradoEn != null ? v.registradoEn : v.llegadaAfueraEn;
-    return `<li class="carro${estado}${primero ? ' carro--primero' : ''}" data-key="car-${esc(v.placa)}" data-flip="${esc(v.placa)}">
-      ${placaHTML(v.placa)}
-      <span class="carro-dato">${esc(etiquetaCarro(v))}</span>
-      <span class="carro-hora">${App.hora(hora)}${primero ? ', primero' : ''}</span>
+    return `<li class="bg-surface-container-lowest rounded-xl shadow-sm border-l-4 ${borde} p-2 flex flex-col gap-0.5 min-w-0" data-key="car-${esc(v.placa)}" data-flip="${esc(v.placa)}">
+      <div>${placaHTML(v.placa)}</div>
+      <span class="text-label-sm text-on-surface">${esc(etiquetaCarro(v))}</span>
+      <span class="${clases.nota}">${App.hora(hora)}${primero ? ', primero' : ''}</span>
     </li>`;
   }
 
   function pasarela(acceso) {
     const fila = App.fila(acceso);
     const afuera = App.afuera(acceso);
-    const capacidad = 4;
+    const capacidad = App.engine.resumen().accesos[acceso].capacidad;
     const huecos = Math.max(0, capacidad - fila.length);
-    return `<section class="pasarela" aria-label="Pasarela ${App.NOMBRE_ACCESO[acceso]}">
-      <h3 class="pasarela-titulo">${App.NOMBRE_ACCESO[acceso]} <span>${fila.length}/${capacidad}</span></h3>
-      <p class="pasarela-porteria">Portería</p>
-      <ol class="carril">
+    return `<section class="bg-surface-container-low rounded-2xl p-space-sm flex flex-col gap-space-xs min-w-0" aria-label="Pasarela ${App.NOMBRE_ACCESO[acceso]}">
+      <div class="flex items-center justify-between gap-2"><h3 class="text-label-lg text-on-surface">${App.NOMBRE_ACCESO[acceso]}</h3>${App.chipMarca(`${fila.length}/${capacidad}`)}</div>
+      <p class="${clases.nota} flex items-center gap-1">${icono('contactless', 18)}Portería</p>
+      <ol class="flex flex-col gap-space-xs">
         ${fila.map((v, i) => tarjetaCarro(v, i === 0)).join('')}
-        ${Array.from({ length: huecos }, (_, i) => `<li class="hueco" data-key="hueco-${acceso}-${i}">Cupo libre</li>`).join('')}
+        ${Array.from({ length: huecos }, (_, i) => `<li class="rounded-xl border border-dashed border-outline-variant p-2 text-label-sm text-on-surface-variant text-center" data-key="hueco-${acceso}-${i}">Cupo libre</li>`).join('')}
       </ol>
-      <h4 class="afuera-titulo">Afuera (${afuera.length})</h4>
+      <h4 class="text-label-md text-on-surface mt-1">Afuera (${afuera.length})</h4>
       ${
         afuera.length
-          ? `<ol class="afuera">${afuera.map((v) => tarjetaCarro(v, false)).join('')}</ol>`
-          : '<p class="nota">Nadie espera afuera.</p>'
+          ? `<ol class="flex flex-col gap-space-xs">${afuera.map((v) => tarjetaCarro(v, false)).join('')}</ol>`
+          : `<p class="${clases.nota}">Nadie espera afuera.</p>`
       }
     </section>`;
   }
 
   function infoCelda(id) {
     const celda = id && App.celdas().find((c) => c.id === id);
-    if (!celda) return '<p class="nota">Toca una celda para ver su estado y su placa.</p>';
-    const estado = { LIBRE: 'Libre', RESERVADA: 'Reservada', OCUPADA: 'Ocupada' }[celda.estado];
-    return `<p class="info-celda" aria-live="polite"><b>${esc(celda.id)}</b> en ${esc(App.nombreZona(celda.zona))}: ${estado}${celda.placa ? ` ${placaHTML(celda.placa)}` : ''}</p>`;
+    if (!celda) return `<p class="${clases.nota}">Toca una celda para ver su estado y su placa.</p>`;
+    return `<div class="flex flex-wrap items-center gap-2 bg-surface-container-low rounded-xl p-space-sm" aria-live="polite">
+      <b class="text-label-lg text-on-surface">${esc(celda.id)}</b>
+      <span class="${clases.nota}">${esc(App.nombreZona(celda.zona))}</span>
+      ${App.chip(TEXTO_ESTADO[celda.estado], NOMBRE_ESTADO[celda.estado])}
+      ${celda.placa ? placaHTML(celda.placa) : ''}
+    </div>`;
   }
 
   function mapaOperacion(r) {
     const { CARRO, MOTO } = r.libresPorTipo;
-    const boton = (texto, lote) => `<button type="button" class="control" data-accion="vistaMapa"${lote ? ` data-lote="${lote}"` : ''}>${texto}</button>`;
-    return `<section class="tarjeta operacion-mapa">
-      <h3 class="titulo-seccion">Parqueadero en vivo: ${CARRO} ${CARRO === 1 ? 'celda libre' : 'celdas libres'} de ${r.totalPorTipo.CARRO}</h3>
-      <div class="mapa-vistas" role="group" aria-label="Vista del mapa">${boton('Principal', 'N')}${boton('Ingeniería', 'I')}${boton('Ver todo')}</div>
+    const boton = (texto, lote) =>
+      `<button type="button" class="${clases.secundario}" data-accion="vistaMapa"${lote ? ` data-lote="${lote}"` : ''}>${texto}</button>`;
+    return `<section class="${clases.tarjeta}">
+      <h3 class="${clases.titulo}">Parqueadero en vivo: ${CARRO} ${CARRO === 1 ? 'celda libre' : 'celdas libres'} de ${r.totalPorTipo.CARRO}</h3>
+      <div class="flex flex-wrap gap-space-xs" role="group" aria-label="Vista del mapa">${LOTES.map((l) => boton(l.texto, l.id)).join('')}${boton('Ver todo')}</div>
       ${App.mapas.hueco('panel', `Mapa: ${CARRO} celdas libres de ${r.totalPorTipo.CARRO}`)}
       ${App.mapas.leyenda()}
       ${infoCelda(App.ui.celdaInfo)}
-      <p class="nota">${esc(App.nombreZona('M'))}: ${MOTO} de ${r.totalPorTipo.MOTO} celdas libres. No se dibujan en el mapa.</p>
+      <p class="${clases.nota}">${esc(App.nombreZona('M'))}: ${MOTO} de ${r.totalPorTipo.MOTO} celdas libres. No se dibujan en el mapa.</p>
     </section>`;
   }
 
   function controles() {
     const { corriendo, velocidad } = App.ui.sim;
-    const velocidadBoton = (n) =>
-      `<button type="button" class="control${velocidad === n ? ' control--activo' : ''}" data-accion="velocidad" data-valor="${n}" aria-pressed="${velocidad === n}">x${n}</button>`;
-    return `<section class="controles" aria-label="Controles de simulación">
-      <button type="button" class="control" data-accion="alternarSim">${icono(corriendo ? 'pausa' : 'play', 18)}${corriendo ? 'Pausar' : 'Iniciar reloj'}</button>
-      <div class="control-grupo" role="group" aria-label="Velocidad">${velocidadBoton(1)}${velocidadBoton(10)}</div>
-      <button type="button" class="control" data-accion="avanzarMin">${icono('paso', 18)}Avanzar 1 min</button>
-      <button type="button" class="control" data-accion="generar" data-acceso="REGIONAL">${icono('mas', 18)}Llegada Regional</button>
-      <button type="button" class="control" data-accion="generar" data-acceso="LAS_VEGAS">${icono('mas', 18)}Llegada Las Vegas</button>
-      <label class="interruptor interruptor--control">
-        <input type="checkbox" data-accion-cambio="autoPorteria"${App.engine.state.autoPorteria ? ' checked' : ''}>
-        <span class="interruptor-pista" aria-hidden="true"></span><span>Portería automática</span>
-      </label>
-      <button type="button" class="control" data-accion="exportar">${icono('bajar', 18)}Exportar registro (JSON)</button>
-      <button type="button" class="control" data-accion="reiniciar">${icono('reiniciar', 18)}Reiniciar</button>
+    const velocidadBoton = (n) => {
+      const activo = velocidad === n;
+      return `<button type="button" class="min-h-[44px] min-w-[44px] px-3 rounded-xl text-label-md ${activo ? 'bg-primary-container text-on-primary' : 'bg-surface-container text-primary-container'}" data-accion="velocidad" data-valor="${n}" aria-pressed="${activo}">x${n}</button>`;
+    };
+    const control = (accion, ico, texto, extra = '') =>
+      `<button type="button" class="${clases.secundario}" data-accion="${accion}"${extra}>${icono(ico, 18)}${texto}</button>`;
+    return `<section class="${clases.tarjeta}" aria-label="Controles de simulación">
+      <h3 class="${clases.titulo}">Simulación</h3>
+      <div class="flex flex-wrap items-center gap-space-xs">
+        ${control('alternarSim', corriendo ? 'pause' : 'play_arrow', corriendo ? 'Pausar' : 'Iniciar reloj')}
+        <div class="flex gap-1" role="group" aria-label="Velocidad">${velocidadBoton(1)}${velocidadBoton(10)}</div>
+        ${control('avanzarMin', 'skip_next', 'Avanzar 1 min')}
+        ${control('generar', 'add', 'Generar llegada Regional', ' data-acceso="REGIONAL"')}
+        ${control('generar', 'add', 'Generar llegada Las Vegas', ' data-acceso="LAS_VEGAS"')}
+        ${control('exportar', 'download', 'Exportar JSON')}
+        ${control('reiniciar', 'restart_alt', 'Reiniciar')}
+      </div>
+      ${App.interruptor(`data-accion-cambio="autoPorteria"${App.engine.state.autoPorteria ? ' checked' : ''}`, 'Portería automática')}
     </section>`;
   }
 
@@ -89,18 +105,18 @@
   function confirmar() {
     const p = App.ui.porteria;
     const res = p.resultado;
-    return `<form class="tarjeta" data-formulario="verificar">
-      <h3 class="titulo-seccion">Confirmar en portería</h3>
-      <label class="campo"><span>Acceso</span>
-        <select class="entrada" data-campo="porteria.acceso">
+    return `<form class="${clases.tarjeta}" data-formulario="verificar">
+      <h3 class="${clases.titulo}">Confirmar en portería</h3>
+      <label class="${clases.etiqueta}"><span>Acceso</span>
+        <select class="${clases.entrada}" data-campo="porteria.acceso">
           ${App.ACCESOS.map((a) => `<option value="${a}"${a === p.acceso ? ' selected' : ''}>${App.NOMBRE_ACCESO[a]}</option>`).join('')}
         </select>
       </label>
-      <label class="campo"><span>Placa</span>
-        <input class="entrada entrada--placa" data-campo="porteria.placa" value="${esc(App.formatoPlaca(placaPorteria(p)))}" autocomplete="off" placeholder="Sin carros en fila">
+      <label class="${clases.etiqueta}"><span>Placa</span>
+        <input class="entrada--placa font-mono tracking-wider ${clases.entrada}" data-campo="porteria.placa" value="${esc(App.formatoPlaca(placaPorteria(p)))}" autocomplete="off" placeholder="Sin carros en fila">
       </label>
-      <button type="submit" class="boton boton--primario">Verificar placa y reserva</button>
-      ${res ? `<p class="veredicto veredicto--${res.ok ? 'ok' : 'error'}" role="status">${icono(res.ok ? 'check' : 'alerta', 18)}${esc(res.texto)}</p>` : ''}
+      <button type="submit" class="${clases.primario}">${icono('verified', 22)}Verificar placa y reserva</button>
+      ${res ? App.aviso(res.ok ? 'ok' : 'error', `<p>${esc(res.texto)}</p>`) : ''}
     </form>`;
   }
 
@@ -111,45 +127,46 @@
     });
     const maxAsig = Math.max(...datos.map((d) => d.asignadas), 1);
     const maxEsp = Math.max(...datos.map((d) => d.esperaPromedioMin), 1);
-    const fila = (d, valor, max, unidad) => `<div class="medida">
+    const fila = (d, valor, max, unidad) => `<div class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2 text-label-sm text-on-surface">
       <span>${App.NOMBRE_ACCESO[d.acceso]}</span>
-      <div class="barra"><span style="width:${(valor / max) * 100}%"></span></div>
+      <div class="h-2.5 rounded-full bg-surface-container-high overflow-hidden"><div class="h-full rounded-full bg-primary-container" style="width:${(valor / max) * 100}%"></div></div>
       <b>${valor}${unidad}</b>
     </div>`;
-    return `<section class="tarjeta">
-      <h3 class="titulo-seccion">Medidor de justicia</h3>
-      <h4 class="subtitulo">Celdas asignadas</h4>
+    return `<section class="${clases.tarjeta}">
+      <h3 class="${clases.titulo}">Medidor de justicia</h3>
+      <h4 class="text-label-md text-on-surface-variant">Celdas asignadas</h4>
       ${datos.map((d) => fila(d, d.asignadas, maxAsig, '')).join('')}
-      <h4 class="subtitulo">Espera promedio por celda</h4>
+      <h4 class="text-label-md text-on-surface-variant">Espera promedio por celda</h4>
       ${datos.map((d) => fila(d, d.esperaPromedioMin, maxEsp, ' min')).join('')}
-      <p class="nota">${esc(window.ParkEngine.POLITICA_TEXTO)}</p>
+      <p class="${clases.nota}">${esc(window.ParkEngine.POLITICA_TEXTO)}</p>
     </section>`;
   }
 
   function registro() {
     const eventos = App.eventos().slice(-MAX_EVENTOS).reverse();
     const total = App.eventos().length;
-    return `<section class="tarjeta registro">
-      <h3 class="titulo-seccion">Registro de eventos</h3>
+    return `<section class="${clases.tarjeta}">
+      <h3 class="${clases.titulo}">Registro de eventos</h3>
       ${
         eventos.length
-          ? `<ol class="eventos">${eventos
-              .map((e, i) => `<li data-key="ev-${total - i}"><time>${esc(e.t)}</time><span>${esc(e.mensaje)}</span></li>`)
+          ? `<ol class="flex flex-col gap-1.5 max-h-72 overflow-y-auto">${eventos
+              .map((e, i) => `<li class="flex gap-2 text-label-sm text-on-surface" data-key="ev-${total - i}"><time class="font-mono text-on-surface-variant shrink-0">${esc(e.t)}</time><span class="min-w-0">${esc(e.mensaje)}</span></li>`)
               .join('')}</ol>`
-          : '<p class="nota">Aún no hay eventos. Genera una llegada o avanza el reloj.</p>'
+          : `<p class="${clases.nota}">Aún no hay eventos. Genera una llegada o avanza el reloj.</p>`
       }
     </section>`;
   }
 
   App.pantallas.operacion = function () {
     const r = App.engine.resumen();
-    return `<div class="operacion">
+    return `<div class="flex flex-col gap-space-md min-w-0">
+      ${App.tituloPantalla('Portería y operación', App.ui.sim.corriendo ? App.chipEnVivo('En vivo') : '')}
       ${controles()}
-      <div class="operacion-filas"><div class="pasarelas">${App.ACCESOS.map(pasarela).join('')}</div></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">${App.ACCESOS.map(pasarela).join('')}</div>
+      ${confirmar()}
       ${mapaOperacion(r)}
-      <div class="operacion-confirmar">${confirmar()}</div>
-      <div class="operacion-medidor">${medidor(r)}</div>
-      <div class="operacion-registro">${registro()}</div>
+      ${medidor(r)}
+      ${registro()}
     </div>`;
   };
 

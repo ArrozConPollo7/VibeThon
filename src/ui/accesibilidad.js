@@ -1,6 +1,6 @@
 // Panel de accesibilidad: tema, tamaño de letra, contraste, movimiento y sonido.
 (function () {
-  const { icono } = App;
+  const { icono, clases } = App;
   const TEMAS = [
     { id: 'light', texto: 'Claro' },
     { id: 'dark', texto: 'Oscuro' },
@@ -11,6 +11,8 @@
     { id: 2, texto: 'A+', etiqueta: 'Tamaño de letra grande' },
     { id: 3, texto: 'A++', etiqueta: 'Tamaño de letra muy grande' }
   ];
+  const BOTON_ICONO =
+    'w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors';
 
   App.prefs = window.ParkPrefs.leer();
 
@@ -22,35 +24,33 @@
   };
 
   function segmentos(nombre, opciones) {
-    return `<div class="segmentos">${opciones
-      .map(
-        (o) => `<button type="button" class="segmento" data-accion="elegirPref" data-pref="${nombre}" data-valor="${o.id}" aria-pressed="${String(App.prefs[nombre]) === String(o.id)}"${o.etiqueta ? ` aria-label="${o.etiqueta}"` : ''}>${o.texto}</button>`
-      )
+    return `<div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-surface-container-low">${opciones
+      .map((o) => {
+        const activo = String(App.prefs[nombre]) === String(o.id);
+        return `<button type="button" class="min-h-[44px] rounded-lg text-label-md ${activo ? 'bg-primary-container text-on-primary shadow-sm' : 'text-on-surface-variant'}" data-accion="elegirPref" data-pref="${nombre}" data-valor="${o.id}" aria-pressed="${activo}"${o.etiqueta ? ` aria-label="${o.etiqueta}"` : ''}>${o.texto}</button>`;
+      })
       .join('')}</div>`;
   }
 
-  function interruptor(pref, texto) {
-    return `<label class="interruptor">
-      <input type="checkbox" data-accion-cambio="alternarPref" data-pref="${pref}"${App.prefs[pref] ? ' checked' : ''}>
-      <span class="interruptor-pista" aria-hidden="true"></span><span>${texto}</span>
-    </label>`;
-  }
+  const interruptor = (pref, texto) =>
+    App.interruptor(`data-accion-cambio="alternarPref" data-pref="${pref}"${App.prefs[pref] ? ' checked' : ''}`, texto);
 
   App.pantallas.herramientas = function () {
     const abierto = App.ui.panelA11y;
     const { silencio } = App.prefs;
-    return `<div class="herramientas">
-      <button type="button" class="boton-icono" data-accion="alternarSilencio" aria-pressed="${silencio}" aria-label="${silencio ? 'Activar sonidos' : 'Silenciar sonidos'}">${icono(silencio ? 'silencio' : 'parlante', 22)}</button>
-      <button type="button" class="boton-icono" id="abrir-a11y" data-accion="alternarPanelA11y" aria-expanded="${Boolean(abierto)}" aria-controls="panel-a11y" aria-label="Accesibilidad">${icono('accesibilidad', 22)}</button>
+    return `<div class="flex items-center shrink-0">
+      <button type="button" class="${BOTON_ICONO}" data-accion="alternarSilencio" aria-pressed="${silencio}" aria-label="${silencio ? 'Activar sonidos' : 'Silenciar sonidos'}">${icono(silencio ? 'volume_off' : 'volume_up', 22)}</button>
+      <button type="button" class="${BOTON_ICONO}" id="abrir-a11y" data-accion="alternarPanelA11y" aria-expanded="${Boolean(abierto)}" aria-controls="panel-a11y" aria-label="Accesibilidad">${icono('accessibility_new', 22)}</button>
     </div>`;
   };
 
   App.pantallas.panelA11y = function () {
     if (!App.ui.panelA11y) return '';
-    return `<section class="panel-a11y" id="panel-a11y" data-key="panel-a11y" aria-label="Accesibilidad">
-      <h2>Accesibilidad</h2>
-      <fieldset><legend>Tema</legend>${segmentos('tema', TEMAS)}</fieldset>
-      <fieldset><legend>Tamaño de letra</legend>${segmentos('letra', LETRAS)}</fieldset>
+    const leyenda = 'text-label-md text-on-surface mb-1.5';
+    return `<section class="fixed top-16 right-4 left-4 sm:left-auto sm:w-80 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto bg-surface-container-lowest rounded-2xl p-space-md shadow-xl flex flex-col gap-space-sm" id="panel-a11y" data-key="panel-a11y" aria-label="Accesibilidad">
+      <h2 class="${clases.titulo}">Accesibilidad</h2>
+      <fieldset><legend class="${leyenda}">Tema</legend>${segmentos('tema', TEMAS)}</fieldset>
+      <fieldset><legend class="${leyenda}">Tamaño de letra</legend>${segmentos('letra', LETRAS)}</fieldset>
       ${interruptor('contraste', 'Alto contraste')}
       ${interruptor('reducir', 'Reducir animaciones')}
       ${interruptor('silencio', 'Silenciar sonidos')}

@@ -12,7 +12,7 @@ window.App = (function () {
   const MAX_TOASTS = 3;
 
   const estadoInicial = () => ({
-    vista: 'demo',
+    vista: window.matchMedia('(min-width: 1024px)').matches ? 'demo' : 'conductor',
     tab: 'inicio',
     placa: null,
     fijada: false,
@@ -59,30 +59,11 @@ window.App = (function () {
   App.formatoPlaca = (placa) => (placa.length > 3 ? `${placa.slice(0, 3)} ${placa.slice(3)}` : placa);
   App.tipoPlaca = (placa) => (RE_CARRO.test(placa) ? 'CARRO' : RE_MOTO.test(placa) ? 'MOTO' : null);
   App.tipoVehiculo = (v) => v.tipo || App.tipoPlaca(v.placa) || 'CARRO';
-  App.chipTipo = (tipo) =>
-    `<span class="chip-tipo">${App.icono(tipo === 'MOTO' ? 'moto' : 'carro', 18)}${TIPO_TEXTO[tipo]}</span>`;
   App.nombreZona = (zona) => {
     const zonas = window.ParkData ? window.ParkData.zonas : {};
     return zonas[zona] ? zonas[zona].nombre : `Zona ${zona}`;
   };
   App.loteAcceso = (acceso) => (window.ParkData ? window.ParkData.accesos[acceso].lote : null);
-
-  App.tituloPantalla = (titulo, chip, subtitulo) =>
-    `<header class="cab-pantalla"><h1>${titulo}</h1>${chip || ''}${subtitulo ? `<p>${subtitulo}</p>` : ''}</header>`;
-
-  const RADIO_ANILLO = 40;
-  App.anillo = function (pct, etiqueta, texto) {
-    const circunferencia = 2 * Math.PI * RADIO_ANILLO;
-    return `<div class="anillo-caja" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${etiqueta}">
-      <svg class="anillo" viewBox="0 0 100 100" aria-hidden="true">
-        <circle class="anillo-pista" cx="50" cy="50" r="${RADIO_ANILLO}"/>
-        <circle class="anillo-valor" cx="50" cy="50" r="${RADIO_ANILLO}" stroke-dasharray="${circunferencia}" stroke-dashoffset="${circunferencia * (1 - pct / 100)}"/>
-      </svg><span>${texto}</span>
-    </div>`;
-  };
-
-  App.placaHTML = (placa, grande) =>
-    `<span class="placa${grande ? ' placa--grande' : ''}">${App.esc(placa)}</span>`;
 
   // Lecturas del motor (forma fijada en TAREA_01B §2).
   App.vehiculos = () => App.engine.state.vehiculos;
@@ -294,8 +275,8 @@ window.App = (function () {
   };
 
   App.reiniciarUI = function () {
-    const { vista } = App.ui;
-    App.ui = { ...estadoInicial(), vista };
+    const { vista, tab } = App.ui;
+    App.ui = { ...estadoInicial(), vista, tab: vista === 'valet' ? tab : 'inicio' };
     App.celdaVista = {};
     App.toasts = [];
     App.reprogramarSim();

@@ -2,7 +2,6 @@
 // persistente que App.morf no toca: el render deja un hueco y aquí se le reubica el nodo.
 App.mapas = (function () {
   const ESTADO_MAPA = { LIBRE: 'free', RESERVADA: 'held', OCUPADA: 'taken' };
-  const LOTE_FUERA_DEL_RETO = 'G';
   const PULSO_MS = 1500;
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const instancias = {};
@@ -42,7 +41,7 @@ App.mapas = (function () {
     host.className = 'mapa-vivo';
     const vistos = estadosActuales();
     const api = window.ParkingMap.create(host, {
-      lots: window.ParkingMap.DEFAULT_LOTS.filter((l) => l.id !== LOTE_FUERA_DEL_RETO),
+      lots: window.ParkingMap.DEFAULT_LOTS,
       theme: tema(),
       initialStatus: vistos,
       onSelect: (celda) => alSeleccionar(nombre, celda)
@@ -92,11 +91,11 @@ App.mapas = (function () {
     });
   }
 
-  function enfocar(inst, { celda, lote, placa, verTodo }) {
+  function enfocar(inst, { celda, lote, placa }) {
     if (inst.enfocada === celda) return;
     inst.enfocada = celda;
     inst.api.select(celda);
-    sinZoomAnimado(() => (verTodo === 'si' ? inst.api.showAll() : inst.api.focusLot(lote)));
+    sinZoomAnimado(() => inst.api.focusLot(lote));
     dibujarRuta(inst, App.engine.ruta(placa).puntos);
   }
 
@@ -129,13 +128,13 @@ App.mapas = (function () {
     });
   }
 
-  const atributoFoco = ({ celda, lote, placa, verTodo }) =>
-    celda
-      ? ` data-celda="${App.esc(celda)}" data-lote="${App.esc(lote)}" data-placa="${App.esc(placa)}" data-ver-todo="${verTodo ? 'si' : 'no'}"`
-      : '';
+  const atributoFoco = ({ celda, lote, placa }) =>
+    celda ? ` data-celda="${App.esc(celda)}" data-lote="${App.esc(lote)}" data-placa="${App.esc(placa)}"` : '';
+
+  const ALTURA_MAPA = { celular: 'h-80', panel: 'h-[70vh]' };
 
   function hueco(nombre, etiqueta, foco = {}) {
-    return `<div class="mapa-hueco mapa-hueco--${nombre}" data-key="mapa-${nombre}" data-mapa="${nombre}" role="group" aria-label="${App.esc(etiqueta)}"${atributoFoco(foco)}></div>`;
+    return `<div class="mapa-hueco rounded-xl ${ALTURA_MAPA[nombre]}" data-key="mapa-${nombre}" data-mapa="${nombre}" role="group" aria-label="${App.esc(etiqueta)}"${atributoFoco(foco)}></div>`;
   }
 
   // Dentro de .pm-root la leyenda hereda los mismos colores que pinta el componente.
@@ -146,10 +145,11 @@ App.mapas = (function () {
       ['held', 'Reservada'],
       ['taken', 'Ocupada'],
       ['pmr', 'Movilidad reducida'],
-      ['eco', 'Baja emisión']
+      ['eco', 'Baja emisión'],
+      ['prov', 'Proveedores']
     ];
-    return `<ul class="pm-root mapa-leyenda${oscuro}">
-      ${items.map(([clase, texto]) => `<li><span class="muestra muestra--${clase}"></span>${texto}</li>`).join('')}
+    return `<ul class="pm-root mapa-leyenda${oscuro} flex flex-wrap gap-x-3 gap-y-1 text-label-sm text-on-surface">
+      ${items.map(([clase, texto]) => `<li class="flex items-center gap-1.5"><span class="muestra muestra--${clase}"></span>${texto}</li>`).join('')}
     </ul>`;
   }
 

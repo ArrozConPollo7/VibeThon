@@ -56,7 +56,9 @@
     document.body.appendChild(lienzo);
     const ctx = lienzo.getContext('2d');
     const estilos = getComputedStyle(document.documentElement);
-    const colores = ['--eafit-acento', '--eafit-cian', '--ok', '--blanco'].map((c) => estilos.getPropertyValue(c).trim());
+    const colores = ['--secondary-container', '--primary-container', '--libre-punto', '--surface-tint'].map(
+      (c) => `rgb(${estilos.getPropertyValue(c).trim()})`
+    );
     const piezas = Array.from({ length: PIEZAS_CONFETI }, (_, i) => ({
       x: lienzo.width * Math.random(),
       y: -20 - Math.random() * lienzo.height * 0.3,

@@ -2,17 +2,27 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ParkEAFIT</title>
   <meta name="description" content="Prototipo de ParkEAFIT: fila visible, reparto justo de celdas y valet opcional para el parqueadero compartido de EAFIT.">
   <script src="src/ui/preferencias-inicial.js"></script>
   <link rel="stylesheet" href="src/ui/styles.css">
+  <script>
+    // tailwind.js es la compilación local del Play CDN; su aviso de producción no aplica sin red.
+    (function () {
+      const original = console.warn;
+      console.warn = function (...args) {
+        if (!String(args[0]).includes('cdn.tailwindcss.com')) original.apply(console, args);
+      };
+    })();
+  </script>
   <script src="src/vendor/tailwind.js"></script>
+  <script src="src/ui/tailwind-config.js"></script>
 </head>
 <body>
   <div id="app"></div>
   <div id="panel-raiz"></div>
-  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="toasts" class="fixed top-4 inset-x-4 z-50 flex flex-col items-center gap-space-xs pointer-events-none" aria-live="polite"></div>
 
   <script src="src/mapa-datos.js"></script>
   <script src="src/data.js"></script>
@@ -20,6 +30,7 @@
   <script src="src/engine.stub.js"></script>
   <script src="src/ui/core.js"></script>
   <script src="src/ui/iconos.js"></script>
+  <script src="src/ui/componentes.js"></script>
   <script src="src/ui/accesibilidad.js"></script>
   <script src="src/ui/efectos.js"></script>
   <script src="src/vendor/parking-map.js"></script>
