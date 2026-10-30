@@ -375,5 +375,94 @@ prueba('14. Datos de la demo: Regional 4 en pasarela + 1 afuera; 60 min de guion
   motos.forEach(function (m) { if (m.celdaId) assert.strictEqual(m.celdaId.charAt(0), 'M'); });
 });
 
+prueba('15. Inspección del operador: exige recepción y datos válidos', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2 }));
+  e.llegar({ placa: 'INS123', conductor: 'Laura', acceso: 'REGIONAL', valet: true });
+  e.valetPagar('INS123', 'TARJETA');
+
+  // antes de entregar el carro al operador no se puede inspeccionar
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 1000, fotos: 3 }).ok, false);
+
+  assert.strictEqual(e.valetEntregar('INS123').ok, true);
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: -5, fotos: 3 }).error,
+    'Los kilómetros deben ser un número mayor o igual a 0.');
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: '1/2', km: 900, fotos: 5 }).error,
+    'Las fotos deben ser un número entero entre 0 y 4.');
+  assert.strictEqual(e.valetInspeccionar('INS123', { combustible: 'medio', km: 900, fotos: 2 }).ok, false);
+
+  var ok = e.valetInspeccionar('INS123', { combustible: '3/4', km: 48320, novedades: 'Rayón leve en la puerta derecha', fotos: 4 });
+  assert.strictEqual(ok.ok, true);
+  var v = e.state.vehiculos.filter(function (x) { return x.placa === 'INS123'; })[0];
+  assert.strictEqual(v.valet.inspeccion.combustible, '3/4');
+  assert.strictEqual(v.valet.inspeccion.km, 48320);
+  assert.strictEqual(v.valet.inspeccion.fotos, 4);
+  assert.strictEqual(v.valet.inspeccion.novedades, 'Rayón leve en la puerta derecha');
+  assert.ok(v.valet.inspeccion.hora > 0, 'la inspección guarda la hora simulada');
+  assert.ok(e.state.eventos.some(function (ev) { return ev.tipo === 'VALET_INSPECCION'; }));
+});
+
+prueba('16. Entrega con PIN: traslado → bahía → PIN incorrecto → DEVUELTO con celda y casillero libres', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2 }));
+  e.llegar({ placa: 'PIN123', conductor: 'Laura', acceso: 'REGIONAL', valet: true });
+  var pago = e.valetPagar('PIN123', 'NEQUI');
+  var v = e.state.vehiculos.filter(function (x) { return x.placa === 'PIN123'; })[0];
+  assert.ok(/^VAL-\d{4}$/.test(pago.valet.ticket), 'ticket VAL-XXXX');
+  assert.ok(/^\d{4}$/.test(v.valet.pin), 'PIN de 4 dígitos');
+  assert.strictEqual(v.valet.tarifa, 8000);
+  assert.ok(['Carlos Restrepo', 'Luisa Mejía', 'Andrés Gil'].indexOf(v.valet.operador) >= 0);
+
+  e.valetEntregar('PIN123');
+  e.confirmarPorteria('REGIONAL', 'PIN123');
+  e.estacionar('PIN123');
+  assert.strictEqual(v.valet.estado, 'LLAVES_EN_CUSTODIA');
+  var casillero = v.valet.casillero;
+  assert.ok(casillero >= 1 && casillero <= 30);
+
+  assert.strictEqual(e.valetSolicitarCarro('PIN123').ok, true);
+  e.avanzar(2);
+  assert.strictEqual(v.valet.estado, 'EN_TRASLADO', 'a los 2 min sale en traslado');
+  e.avanzar(2);
+  assert.strictEqual(v.valet.estado, 'LISTO_EN_BAHIA', 'a los 2 min más está en bahía');
+  assert.ok(e.state.eventos.some(function (ev) { return ev.tipo === 'VALET_LISTO'; }));
+
+  var malo = e.valetEntregarCliente('PIN123', '0000' === v.valet.pin ? '1111' : '0000');
+  assert.strictEqual(malo.ok, false);
+  assert.strictEqual(malo.error, 'PIN incorrecto. Pídele al estudiante el código de 4 dígitos.');
+
+  assert.strictEqual(e.valetEntregarCliente('PIN123', v.valet.pin).ok, true);
+  assert.strictEqual(v.valet.estado, 'DEVUELTO');
+  assert.strictEqual(v.valet.casillero, null, 'el casillero se libera');
+  assert.strictEqual(e.state.celdas.filter(function (c) { return c.placa === 'PIN123'; }).length, 0,
+    'la celda vuelve a LIBRE');
+  assert.ok(e.state.celdas.some(function (c) { return c.estado === 'LIBRE'; }));
+  e.verificarInvariantes();
+});
+
+prueba('17. valetListar(): sin PIN, con celda, parqueadero y casillero', function () {
+  var e = ParkEngine.crear(datos({ nCeldas: 2 }));
+  e.llegar({ placa: 'LIS123', conductor: 'Laura', acceso: 'REGIONAL', valet: true });
+  e.valetPagar('LIS123', 'PSE');
+  e.valetEntregar('LIS123');
+  e.confirmarPorteria('REGIONAL', 'LIS123');
+  e.estacionar('LIS123');
+
+  var lista = e.valetListar();
+  assert.strictEqual(lista.length, 1);
+  var item = lista[0];
+  assert.strictEqual(item.placa, 'LIS123');
+  assert.strictEqual(item.estado, 'LLAVES_EN_CUSTODIA');
+  assert.strictEqual(item.celdaId, 'A-01');
+  assert.strictEqual(item.zona, 'A');
+  assert.strictEqual(item.nombreZona, 'Zona A');
+  assert.ok(item.casillero >= 1 && item.casillero <= 30);
+  assert.strictEqual(item.operador !== null, true);
+  assert.strictEqual(item.pin, undefined, 'el operador no debe ver el PIN');
+  assert.strictEqual(JSON.stringify(item).indexOf('"pin"'), -1, 'ni dentro del JSON');
+
+  // la lista es una copia: tocarla no cambia el motor
+  item.casillero = 999;
+  assert.notStrictEqual(e.valetListar()[0].casillero, 999);
+});
+
 console.log('\n' + pasadas + '/' + total + ' pruebas pasaron');
 if (pasadas !== total) process.exitCode = 1;
