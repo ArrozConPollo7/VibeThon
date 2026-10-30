@@ -18,12 +18,13 @@
   var ZONAS = {
     N: { nombre: 'Parqueadero Principal' },
     I: { nombre: 'Parqueadero de Ingeniería' },
+    G: { nombre: 'Parqueadero de Idiomas (Los Guayabos)' },
     M: { nombre: 'Motos · Ingeniería' }
   };
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-  // --- Celdas: las 624 del mapa (Principal + Ingeniería) + 10 de moto ----
+  // --- Celdas: las 880 del mapa (Principal + Ingeniería + Idiomas) + 10 de moto ----
   // Las celdas PMR (movilidad reducida) y ECO (baja emisión) existen en el mapa pero el
   // motor no las asigna a carros generales: su tipo no coincide con CARRO ni MOTO.
   var TIPO_POR_CLASE = { general: 'CARRO', pmr: 'PMR', eco: 'ECO', prov: 'PROV' };
@@ -40,7 +41,7 @@
 
   // Escasez realista: casi todo ocupado a las 07:30. Libres: 6 de carro, 2 especiales, 3 de moto.
   var CELDAS_LIBRES = {
-    'N-150': true, 'N-320': true, 'N-410': true, 'I-060': true, 'I-120': true, 'I-170': true,
+    'N-150': true, 'N-320': true, 'N-410': true, 'I-060': true, 'I-120': true, 'I-170': true, 'G-210': true,
     'N-002': true, 'I-005': true,
     'M-04': true, 'M-08': true, 'M-10': true
   };
@@ -92,7 +93,7 @@
       placa: c.placa,
       conductor: CONDUCTORES[i % CONDUCTORES.length],
       tipo: c.tipo,
-      acceso: c.zona === 'N' ? 'REGIONAL' : 'LAS_VEGAS',
+      acceso: c.zona === 'I' ? 'LAS_VEGAS' : 'REGIONAL',
       estado: 'ESTACIONADO',
       celdaId: c.id,
       horaClase: null

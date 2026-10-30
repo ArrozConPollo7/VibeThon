@@ -18,7 +18,7 @@
 ## 1. Montaje (lo más importante)
 `ParkingMap.create(contenedor, ...)` crea su propio DOM. La UI re-renderiza con `App.morf`, que **destruiría el mapa** en cada cambio. Por eso:
 - Crea el mapa **una sola vez por contenedor** y mantenlo vivo: un nodo persistente que `morf` no toque (por ejemplo, un `<div data-mapa-persistente>` que el diff salte, o montarlo fuera del árbol re-renderizado y moverlo con `appendChild` al hueco correspondiente después de cada render).
-- Pasa solo los lotes del reto: `lots: ParkingMap.DEFAULT_LOTS.filter(l => l.id !== 'G')`.
+- Usa los 3 lotes (`ParkingMap.DEFAULT_LOTS`): Principal, Ingeniería e Idiomas.
 - Sincroniza en cada notificación del motor (`engine.suscribir`) con **un solo** `setStatuses(...)` que solo incluya celdas que cambiaron: `LIBRE→'free'`, `RESERVADA→'held'`, `OCUPADA→'taken'`. Ignora las `M-xx` (no existen en el mapa).
 - Tema: `setTheme('dark'|'light')` según la preferencia de accesibilidad, también al cambiarla.
 
