@@ -84,6 +84,33 @@
     </section>`;
   }
 
+  // Avatar generado en SVG (iniciales + color por nombre): nada de fotos de personas reales.
+  function avatarOperador(nombre) {
+    const partes = String(nombre || 'Valet').split(' ').filter(Boolean);
+    const iniciales = (partes[0] || 'V').charAt(0) + (partes[1] ? partes[1].charAt(0) : '');
+    let h = 0;
+    for (const c of String(nombre || 'V')) h = (h * 31 + c.charCodeAt(0)) % 360;
+    return `<span class="w-11 h-11 rounded-full flex items-center justify-center text-on-primary text-label-md shrink-0" style="background:hsl(${h} 55% 42%)" aria-hidden="true">${esc(iniciales.toUpperCase())}</span>`;
+  }
+
+  function tarjetaOperador(v) {
+    if (!v.valet || v.valet.estado === 'SELECCIONADO') return '';
+    if (v.valet.estado === 'PAGADO') {
+      return `<section class="${clases.tarjeta}"><div class="flex items-center gap-3">
+        <span class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container">${icono('search', 22)}</span>
+        <div class="flex flex-col"><b class="text-label-md text-on-surface">Buscando un operador…</b><span class="${clases.nota}">Te avisamos cuando alguien acepte el servicio.</span></div>
+      </div></section>`;
+    }
+    return `<section class="${clases.tarjeta}"><div class="flex items-center gap-3">
+      ${avatarOperador(v.valet.operador)}
+      <div class="flex flex-col min-w-0">
+        <b class="text-label-md text-on-surface">${esc(v.valet.operador || 'Operador del valet')}</b>
+        <span class="${clases.nota}">Valet EAFIT Movilidad · verificado</span>
+        <span class="${clases.nota}">★ 4.9 · Caseta Valet · Ext. #4500</span>
+      </div>
+    </div></section>`;
+  }
+
   function tarjetaVehiculo(v, chip) {
     const hora = App.hora(v.registradoEn != null ? v.registradoEn : v.llegadaAfueraEn);
     return `<section class="relative overflow-hidden ${clases.tarjeta}">
@@ -117,6 +144,7 @@
     const chip = puedeSolicitar ? App.chip('libre', 'Custodia activa') : App.chip('reservada', 'En proceso');
     return `<div class="flex flex-col gap-space-md">
       ${tarjetaVehiculo(v, chip)}
+      ${tarjetaOperador(v)}
       <section class="${clases.tarjeta}"><h2 class="${clases.titulo}">Sigue tu carro</h2>${App.stepper(pasos, 'Estado del valet')}</section>
       <section class="${clases.tarjeta}"><h2 class="${clases.titulo}">Punto de entrega</h2>${puntoEntrega(v)}</section>
       <div class="flex flex-col items-center gap-2">
@@ -162,13 +190,27 @@
         <div class="flex flex-col gap-space-xs"><span class="text-label-md text-on-surface">Estado del despacho</span>${App.stepper(pasos, 'Estado del despacho')}</div>
         ${puntoEntrega(v)}
       </section>
+      ${v.valet.ubicacion ? `<section class="${clases.tarjeta}">
+        <h2 class="${clases.titulo}">Dónde quedó tu carro</h2>
+        <div class="grid grid-cols-2 gap-space-xs">
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Parqueadero</span><span class="text-label-lg text-on-surface">${esc(v.valet.ubicacion.nombreZona || '—')}</span></div>
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Celda</span><span class="text-label-lg text-on-surface">${esc(v.valet.ubicacion.celdaId || v.celdaId || '—')}</span></div>
+        </div>
+        ${v.valet.ubicacion.nota ? `<p class="${clases.nota}">${esc(v.valet.ubicacion.nota)}</p>` : ''}
+        ${v.valet.ubicacion.casillero ? `<p class="${clases.nota}">Llaves en la caja ${esc(v.valet.ubicacion.casillero)}</p>` : ''}
+        ${App.mapas.hueco('valetEstudiante', `Mapa: celda ${v.valet.ubicacion.celdaId || v.celdaId}`, { celda: v.valet.ubicacion.celdaId || v.celdaId, lote: v.valet.ubicacion.zona })}
+      </section>` : ''}
       ${v.valet.inspeccion ? `<section class="${clases.tarjeta}">
         <h2 class="${clases.titulo}">Inspección al recibir</h2>
         <div class="grid grid-cols-2 gap-space-xs">
           <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Combustible</span><span class="text-label-lg text-on-surface">${esc(v.valet.inspeccion.combustible)}</span></div>
           <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Kilometraje</span><span class="text-label-lg text-on-surface">${v.valet.inspeccion.km.toLocaleString('es-CO')} km</span></div>
         </div>
-        <p class="${clases.nota}">${v.valet.inspeccion.fotos}/4 fotos · ${v.valet.inspeccion.novedades ? esc(v.valet.inspeccion.novedades) : 'sin novedades'}</p>
+        <div class="grid grid-cols-4 gap-1">
+          ${(v.valet.inspeccion.fotos || []).map((f, i) => `<button type="button" class="p-0 border-0 bg-transparent" data-accion="ampliarFoto" data-placa="${esc(v.placa)}" data-foto="${i}" aria-label="Ampliar foto ${esc(f.vista)}">
+            <img src="${f.dataUrl}" alt="Foto ${esc(f.vista)}" class="w-full h-14 object-cover rounded-md"></button>`).join('')}
+        </div>
+        <p class="${clases.nota}">${(v.valet.inspeccion.fotos || []).length}/4 fotos · ${v.valet.inspeccion.novedades ? esc(v.valet.inspeccion.novedades) : 'sin novedades'}</p>
       </section>` : ''}
       <section class="${clases.tarjeta}">
         <div class="flex flex-wrap items-center justify-between gap-2"><span class="${clases.nota}">Vehículo en entrega</span>${placaHTML(v.placa, true)}</div>
@@ -288,6 +330,25 @@
     App.set({ valetRecibido: v.placa });
   });
   App.acciones.calificar = (el) => App.set({ calificacion: { ...calificacion(), estrellas: Number(el.dataset.valor) } });
+  App.acciones.ampliarFoto = function (el) {
+    const v = App.vehiculo(el.dataset.placa);
+    const foto = v && v.valet && v.valet.inspeccion ? (v.valet.inspeccion.fotos || [])[Number(el.dataset.foto)] : null;
+    if (!foto) return;
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 bg-on-surface/60 backdrop-blur-sm flex items-center justify-center p-4';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Foto ' + foto.vista);
+    modal.innerHTML = '<figure class="max-w-[92vw] max-h-[92vh] bg-surface-container-lowest rounded-2xl p-3 flex flex-col gap-2">' +
+      '<img src="' + foto.dataUrl + '" alt="Foto ' + esc(foto.vista) + ' del vehículo" class="max-h-[70vh] rounded-xl">' +
+      '<figcaption class="text-label-md text-on-surface">' + esc(foto.vista) + ' · ' + esc(v.placa) + '</figcaption>' +
+      '<button type="button" class="' + clases.primario + '">Cerrar</button></figure>';
+    modal.addEventListener('click', (e) => { if (e.target === modal || e.target.tagName === 'BUTTON') modal.remove(); });
+    document.body.appendChild(modal);
+    const boton = modal.querySelector('button');
+    if (boton) boton.focus();
+  };
+
   App.acciones.alternarAspecto = function (el) {
     const c = calificacion();
     const texto = el.dataset.valor;
