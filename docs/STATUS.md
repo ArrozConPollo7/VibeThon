@@ -396,3 +396,55 @@ chip con la celda preferida y su "quitar", la frase de justicia y el texto en Mi
   motos `M-*`) para mantener los casos legibles; `"datos": "demo"` usa el juego real de 624 celdas.
 - El estado `ACEPTADO` obligó a actualizar las pruebas 8, 15, 16 y 17 (ahora llaman `valetAceptar` antes de
   `valetEntregar`).
+
+---
+
+## Cambios de la revisión de demo (30-oct, tarde)
+
+Pedido de JuanD: entrada desde las 06:00, valet con fotos y entrega real, reclamar el carro desde la vista del
+estudiante, retirar del sistema los carros que ya salieron del campus y **dos entradas por parqueadero**.
+
+### Motor (`src/engine.js`, `src/data.js`)
+
+- **Seis accesos** (dos por parqueadero): `REGIONAL`/`CALLE4` (N), `LAS_VEGAS`/`CARRERA49` (I),
+  `GUAYABOS`/`LOMA` (G). `reiniciarEstado()` arma pasarelas y colas externas desde `datos.accesos`, no desde una
+  lista fija. El guion y la fila inicial reparten carros por las seis entradas.
+- **Hora de llegada simulada:** `llegar({..., horaLlegada})` acepta de 06:00 a la hora actual y la usa como
+  `registradoEn`, así una entrada de las 06:00 conserva el primer turno del FIFO. La hora de clase ahora se valida
+  contra la llegada (no contra el reloj).
+- **Retiro de salidos:** `retirarSalidos()` (manual) y purga automática 5 min después de `salir`; ambos dejan
+  evento `SALIDA_CAMPUS`. `/tests/` nuevos: llegada 06:00, retiro manual, purga automática, dos entradas del mismo
+  lote sin duplicados y acta del valet después de estacionar.
+- `valetInspeccionar` acepta el acta desde que el operador recibe el carro, incluso ya estacionado
+  (`ESTACIONADO` / `LLAVES_EN_CUSTODIA`).
+
+### Interfaz
+
+- `core.js` deriva `App.ACCESOS` y `App.NOMBRE_ACCESO` de `ParkData`; nada de listas de dos accesos.
+- **Inicio:** cada parqueadero muestra sus dos entradas con pasarela, cola externa y recomendación; el formulario
+  tiene "Hora de llegada (opcional)" y seis opciones de acceso.
+- **Valet (operador):** se corrigió el `TypeError` que tumbaba el render al enfocar el mapa (`ruta()` recibía
+  `undefined`); las fotos siguen disponibles después de estacionar y se pueden reemplazar; se agregaron
+  "Pasar portería", "Confirmar estacionado" y **"Traer el carro a bahía"** para que la entrega con PIN no dependa
+  de que el estudiante la pida. Los íconos que no estaban en el subconjunto (`inbox`, `queue`, `flag`,
+  `front_hand`) se cambiaron por otros presentes.
+- **Estudiante:** "Reclamar mi vehículo" en Mi turno (además de la pestaña Valet) y, en custodia, "Dónde quedó tu
+  carro" y el acta con miniaturas ampliables.
+- **Portería y operación:** seis pasarelas, selector de acceso para generar llegadas, tarjeta de carros que ya
+  salieron con retiro manual y contador de celdas duplicadas (debe quedar en 0).
+- Mapa: capa con las seis entradas rotuladas y fila viva por cada acceso.
+
+### Verificación
+
+```
+node tests/engine.test.js → 22/22 pruebas pasaron
+node tests/casos.test.js  → 20/20 casos pasaron
+```
+
+En Chrome sobre `file://` (sin red): llegada `SIX001` por Calle 4 Sur a las 06:00 (`registradoEn 360`, primera en
+FIFO), 6 pasarelas y 6 entradas en Inicio/Operación/Mapa, flujo completo del operador (aceptar → recibir → 4 fotos
+→ portería → estacionar → ubicación → traer a bahía → PIN → `DEVUELTO`), "Reclamar mi vehículo" en Mi turno,
+retiro de 32 salidos, 60 min con autoPortería sin romper invariantes y 390 px sin desbordes.
+
+**Límites:** el guion sigue saturando el parqueadero a propósito; la estimación por acceso es la global del FIFO
+(no promete una celda en el lote de esa entrada). La purga automática usa 5 min; el botón del panel es inmediato.

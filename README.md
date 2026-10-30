@@ -1,6 +1,7 @@
 # VibeThon — ParkEAFIT
 
-Parqueadero compartido de EAFIT (accesos Regional y Las Vegas): visibilidad de la espera, reparto justo de
+Parqueadero compartido de EAFIT con **dos entradas por parqueadero** (Regional y Calle 4 Sur en el Principal;
+Las Vegas y Carrera 49 en Ingeniería; Guayabos y Loma en Idiomas): visibilidad de la espera, reparto justo de
 celdas y valet opcional. Todo simulado y local: un HTML + JavaScript clásico, sin npm, sin backend.
 
 ## Estructura
@@ -18,8 +19,8 @@ celdas y valet opcional. Todo simulado y local: un HTML + JavaScript clásico, s
 ## Cómo probar
 
 ```bash
-node tests/engine.test.js      # 17/17 pruebas
-node tests/casos.test.js       # 18/18 casos de ejemplo
+node tests/engine.test.js      # 22/22 pruebas
+node tests/casos.test.js       # 20/20 casos de ejemplo
 ```
 
 Verificación manual: abrir `src/debug.html` con doble clic (funciona en `file://`) y usar los botones de avance,
