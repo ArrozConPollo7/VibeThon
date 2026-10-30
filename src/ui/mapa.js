@@ -7,12 +7,24 @@ App.mapas = (function () {
   const instancias = {};
 
   // Fila en vivo: las ranuras siguen la vía real de cada acceso, de la portería hacia afuera.
+  // Hay dos entradas por parqueadero (Norte, Ingeniería e Idiomas).
   const VIAS = {
     REGIONAL: [[214, 240], [206, 186], [218, 86], [226, 0]],
-    LAS_VEGAS: [[330, 1062], [363, 1023], [384, 958], [422, 833]]
+    CALLE4: [[506, 60], [570, 28], [650, 48], [735, 76]],
+    LAS_VEGAS: [[330, 1062], [363, 1023], [384, 958], [422, 833]],
+    CARRERA49: [[152, 985], [158, 900], [170, 800], [184, 700]],
+    GUAYABOS: [[836, 318], [858, 380], [866, 450], [870, 520]],
+    LOMA: [[700, 175], [660, 140], [618, 104], [578, 70]]
   };
-  // En Las Vegas el texto va a la izquierda: a la derecha se sale del encuadre del parqueadero.
-  const TEXTO_CORTE = { REGIONAL: { dx: 20, ancla: 'start' }, LAS_VEGAS: { dx: -20, ancla: 'end' } };
+  // En Las Vegas y Guayabos el texto va a la izquierda: a la derecha se sale del encuadre.
+  const TEXTO_CORTE = {
+    REGIONAL: { dx: 20, ancla: 'start' },
+    CALLE4: { dx: 20, ancla: 'start' },
+    LAS_VEGAS: { dx: -20, ancla: 'end' },
+    CARRERA49: { dx: 20, ancla: 'start' },
+    GUAYABOS: { dx: -20, ancla: 'end' },
+    LOMA: { dx: 20, ancla: 'start' }
+  };
   const PASO_RANURA = 22;
   const INICIO_RANURA = 0.6;
   const SEPARACION_CORTE = 0.6;
@@ -66,8 +78,30 @@ App.mapas = (function () {
       onSelect: (celda) => alSeleccionar(nombre, celda)
     });
     instancias[nombre] = { host, api, vistos, enfocada: null, tema: tema(), loteFila: null, escala: ESCALA_FICHA[nombre] || 1 };
+    crearCapaAccesos(instancias[nombre]);
     crearCapaFila(instancias[nombre]);
     return instancias[nombre];
+  }
+
+  // Marca las seis entradas (dos por parqueadero) sobre el plano.
+  function crearCapaAccesos(inst) {
+    const g = nodoSvg('g', { class: 'accesos-campus', 'aria-hidden': 'true' }, inst.host.querySelector('svg'));
+    const ETIQUETA = {
+      CALLE4: { dx: 10, dy: 22, ancla: 'start' },
+      LOMA: { dx: -10, dy: 22, ancla: 'end' }
+    };
+    App.ACCESOS.forEach((acceso) => {
+      const d = window.ParkData && window.ParkData.accesos ? window.ParkData.accesos[acceso] : null;
+      if (!d) return;
+      nodoSvg('circle', { class: 'acceso-punto', cx: d.x, cy: d.y, r: 6 }, g);
+      const etiqueta = ETIQUETA[acceso] || { dx: d.x < 680 ? 10 : -10, dy: -8, ancla: d.x < 680 ? 'start' : 'end' };
+      nodoSvg('text', {
+        class: 'acceso-nombre',
+        x: d.x + etiqueta.dx,
+        y: d.y + etiqueta.dy,
+        'text-anchor': etiqueta.ancla
+      }, g).textContent = App.NOMBRE_ACCESO[acceso];
+    });
   }
 
   const nodoSvg = (etiqueta, atributos, padre) => {

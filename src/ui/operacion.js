@@ -87,12 +87,31 @@
         ${control('alternarSim', corriendo ? 'pause' : 'play_arrow', corriendo ? 'Pausar' : 'Iniciar reloj')}
         <div class="flex gap-1" role="group" aria-label="Velocidad">${velocidadBoton(1)}${velocidadBoton(10)}</div>
         ${control('avanzarMin', 'skip_next', 'Avanzar 1 min')}
-        ${control('generar', 'add', 'Generar llegada Regional', ' data-acceso="REGIONAL"')}
-        ${control('generar', 'add', 'Generar llegada Las Vegas', ' data-acceso="LAS_VEGAS"')}
         ${control('exportar', 'download', 'Exportar JSON')}
         ${control('reiniciar', 'restart_alt', 'Reiniciar')}
       </div>
+      <div class="flex flex-wrap items-end gap-space-xs">
+        <label class="${clases.etiqueta}"><span>Acceso para la llegada</span>
+          <select id="generar-acceso" class="${clases.entrada}">
+            ${App.ACCESOS.map((a) => `<option value="${a}">${App.NOMBRE_ACCESO[a]} · ${esc(App.nombreZona(App.loteAcceso(a)))}</option>`).join('')}
+          </select>
+        </label>
+        ${control('generar', 'add', 'Generar llegada')}
+      </div>
       ${App.interruptor(`data-accion-cambio="autoPorteria"${App.engine.state.autoPorteria ? ' checked' : ''}`, 'Portería automática')}
+    </section>`;
+  }
+
+  function salidosPanel() {
+    const salidos = App.vehiculos().filter((v) => v.estado === 'SALIO').length;
+    const total = App.vehiculos().length;
+    return `<section class="${clases.tarjeta}">
+      <h3 class="${clases.titulo}">Carros que ya salieron del campus</h3>
+      <p class="${clases.nota}">Salir del parqueadero los deja en la vía; 5 min después el sistema los retira solo. También puedes retirarlos de una vez.</p>
+      <div class="flex flex-wrap items-center gap-space-xs">
+        ${App.chip('libre', `${total} en el sistema`)}${App.chip('ocupada', `${salidos} ya salieron`)}
+        <button type="button" class="${clases.secundario}" data-accion="retirarSalidos"${salidos ? '' : ' disabled'}>${icono('logout', 18)}Retirar ${salidos} carro(s) que ya salieron</button>
+      </div>
     </section>`;
   }
 
@@ -138,8 +157,21 @@
       ${datos.map((d) => fila(d, d.asignadas, maxAsig, '')).join('')}
       <h4 class="text-label-md text-on-surface-variant">Espera promedio por celda</h4>
       ${datos.map((d) => fila(d, d.esperaPromedioMin, maxEsp, ' min')).join('')}
+      <p class="${clases.nota}">Celdas duplicadas: <b class="text-on-surface">${celdasDuplicadas()}</b> · Asignaciones registradas: <b class="text-on-surface">${App.engine.state.asignaciones.length}</b></p>
       <p class="${clases.nota}">${esc(window.ParkEngine.POLITICA_TEXTO)}</p>
     </section>`;
+  }
+
+  // Duplicado = la misma placa en dos celdas. Con seis entradas se puede provocar; debe quedar en 0.
+  function celdasDuplicadas() {
+    const vistas = {};
+    let dup = 0;
+    App.celdas().forEach((c) => {
+      if (!c.placa) return;
+      if (vistas[c.placa]) dup++;
+      vistas[c.placa] = true;
+    });
+    return dup;
   }
 
   function registro() {
@@ -162,8 +194,9 @@
     return `<div class="flex flex-col gap-space-md min-w-0">
       ${App.tituloPantalla('Portería y operación', App.ui.sim.corriendo ? App.chipEnVivo('En vivo') : '')}
       ${controles()}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">${App.ACCESOS.map(pasarela).join('')}</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-space-sm">${App.ACCESOS.map(pasarela).join('')}</div>
       ${confirmar()}
+      ${salidosPanel()}
       ${mapaOperacion(r)}
       ${medidor(r)}
       ${registro()}
@@ -183,18 +216,27 @@
     if (r && r.ok === false) App.resultado(r);
   };
   App.acciones.generar = function (el) {
-    const nombre = App.NOMBRE_ACCESO[el.dataset.acceso];
-    const r = App.engine.generarLlegada(el.dataset.acceso);
+    const select = document.getElementById('generar-acceso');
+    const acceso = (el && el.dataset.acceso) || (select && select.value) || null;
+    const r = App.engine.generarLlegada(acceso);
     if (!App.resultado(r)) return;
+    const nombre = App.NOMBRE_ACCESO[acceso] || 'el campus';
     const afuera = r.vehiculo && r.vehiculo.estado === 'AFUERA';
     App.toast('ok', `${r.vehiculo ? r.vehiculo.placa : 'Carro'} llegó a ${nombre}${afuera ? ': pasarela llena, espera afuera' : ''}`);
+  };
+  App.acciones.retirarSalidos = function () {
+    const r = App.engine.retirarSalidos();
+    App.toast('ok', r.retirados
+      ? `${r.retirados} carro(s) retirado(s): ya salieron del campus.`
+      : 'No hay carros pendientes por retirar.');
+    App.programarRender();
   };
   App.acciones.vistaMapa = (el) => App.mapas.vista('panel', el.dataset.lote);
   App.acciones.reiniciar = function () {
     App.reiniciarUI();
     App.mapas.reiniciar();
     App.engine.reiniciar();
-    App.toast('ok', 'Simulación reiniciada a las 07:30');
+    App.toast('ok', 'Simulación reiniciada a las ' + App.engine.resumen().reloj);
   };
   App.acciones.exportar = function () {
     const blob = new Blob([App.engine.exportarJSON()], { type: 'application/json' });

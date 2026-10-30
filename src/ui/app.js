@@ -62,7 +62,7 @@
     if (v.estado === 'AFUERA') return `${v.placa} espera afuera: confirma en portería a los de adelante para abrir cupo.`;
     if (v.estado === 'EN_PASARELA') {
       if (v.saleSinEstacionar) return `${v.placa} sale sin estacionar: confirma en portería a los de adelante.`;
-      if (r.libres === 0 && App.engine.state.clock >= HORA_FIN_GUION) return 'Ya no hay más salidas en el guion. Pulsa Reiniciar para volver a las 07:30.';
+      if (r.libres === 0 && App.engine.state.clock >= HORA_FIN_GUION) return `Ya no hay más salidas en el guion. Pulsa Reiniciar para volver a las ${App.hora(window.ParkData.relojInicial)}.`;
       return `${v.placa} espera celda: inicia el reloj o pulsa Avanzar 1 min hasta que salga un carro.`;
     }
     if (v.estado === 'CELDA_ASIGNADA') {

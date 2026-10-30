@@ -5,12 +5,12 @@
   const OPERADORES = ['Carlos Restrepo', 'Luisa Mejía', 'Andrés Gil'];
   const VISTAS_FOTO = ['Frontal', 'Trasera', 'Lat. izq.', 'Lat. der.', 'Tablero'];
   const GRUPOS = [
-    { id: 'aceptar', titulo: 'Por aceptar', estados: ['PAGADO'], icono: 'inbox' },
-    { id: 'recibir', titulo: 'Aceptados · por recibir', estados: ['ACEPTADO'], icono: 'front_hand' },
-    { id: 'fila', titulo: 'Recibidos / en fila', estados: ['ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO'], icono: 'queue' },
+    { id: 'aceptar', titulo: 'Por aceptar', estados: ['PAGADO'], icono: 'search' },
+    { id: 'recibir', titulo: 'Aceptados · por recibir', estados: ['ACEPTADO'], icono: 'person' },
+    { id: 'fila', titulo: 'Recibidos / en fila', estados: ['ENTREGADO_A_VALET', 'EN_FILA', 'EN_RECORRIDO'], icono: 'schedule' },
     { id: 'estacionados', titulo: 'Estacionados', estados: ['ESTACIONADO', 'LLAVES_EN_CUSTODIA'], icono: 'local_parking' },
-    { id: 'solicitados', titulo: 'Solicitados / en traslado', estados: ['SOLICITADO', 'EN_TRASLADO'], icono: 'schedule' },
-    { id: 'bahia', titulo: 'Listos en bahía', estados: ['LISTO_EN_BAHIA'], icono: 'flag' }
+    { id: 'solicitados', titulo: 'Solicitados / en traslado', estados: ['SOLICITADO', 'EN_TRASLADO'], icono: 'directions_car' },
+    { id: 'bahia', titulo: 'Listos en bahía', estados: ['LISTO_EN_BAHIA'], icono: 'location_on' }
   ];
   const TEXTO_ESTADO = {
     PAGADO: 'Pagado, esperando operador',
@@ -27,7 +27,7 @@
   };
   const PASOS = ['Aceptar', 'Recibir', 'Estacionar', 'Ubicación y llaves', 'Entregar con PIN'];
   const PASO_DE = {
-    PAGADO: 0, ACEPTADO: 1, ENTREGADO_A_VALET: 1, EN_FILA: 1, EN_RECORRIDO: 2,
+    SELECCIONADO: 0, PAGADO: 0, ACEPTADO: 1, ENTREGADO_A_VALET: 1, EN_FILA: 1, EN_RECORRIDO: 2,
     ESTACIONADO: 3, LLAVES_EN_CUSTODIA: 3, SOLICITADO: 4, EN_TRASLADO: 4, LISTO_EN_BAHIA: 4
   };
   const u = () => App.ui.valetOperador || {};
@@ -49,9 +49,9 @@
   function tarjeta(item, activa) {
     const borde = activa ? 'ring-2 ring-primary-container' : 'hover:bg-surface-container';
     return `<button type="button" class="w-full text-left p-space-sm rounded-xl bg-surface-container-lowest ${borde} flex flex-col gap-1" data-accion="valetSelOperador" data-placa="${esc(item.placa)}"${activa ? ' aria-current="true"' : ''}>
-      <div class="flex items-center justify-between gap-2">${placaHTML(item.placa)}<span class="text-[11px] uppercase tracking-wide text-on-surface-variant">${esc(TEXTO_ESTADO[item.estado] || item.estado)}</span></div>
+      <div class="flex items-center justify-between gap-2">${placaHTML(item.placa)}<span class="text-label-sm uppercase tracking-wide text-on-surface-variant">${esc(TEXTO_ESTADO[item.estado] || item.estado)}</span></div>
       <span class="text-label-md text-on-surface">${esc(item.conductor || '—')}</span>
-      <span class="text-[12px] text-on-surface-variant flex flex-wrap gap-x-3">
+      <span class="text-label-sm text-on-surface-variant flex flex-wrap gap-x-3">
         <span>Ticket ${esc(item.ticket || '—')}</span><span>En custodia ${minutosTexto(item.enCustodiaMin)}</span>
       </span>
     </button>`;
@@ -79,46 +79,48 @@
     return VISTAS_FOTO.map((vista) => {
       const dataUrl = fotos[vista];
       return `<div class="flex flex-col gap-1 p-2 rounded-xl bg-surface-container-lowest">
-        <span class="text-[11px] uppercase tracking-wide text-on-surface-variant">${vista}</span>
+        <span class="text-label-sm uppercase tracking-wide text-on-surface-variant">${vista}</span>
         ${dataUrl
           ? `<img src="${dataUrl}" alt="Foto ${vista} del vehículo ${esc(placa)}" class="w-full h-20 object-cover rounded-lg">
-             <button type="button" class="text-[12px] text-mal-texto underline min-h-[32px]" data-accion="valetQuitarFoto" data-vista="${vista}">Quitar</button>`
-          : `<label class="text-[12px] text-primary-container cursor-pointer min-h-[44px] flex items-center">
+             <button type="button" class="text-label-sm text-mal-texto underline min-h-[32px]" data-accion="valetQuitarFoto" data-vista="${vista}">Quitar</button>`
+          : `<label class="text-label-sm text-primary-container cursor-pointer min-h-[44px] flex items-center">
                Subir foto<input type="file" accept="image/*" capture="environment" class="sr-only" data-foto data-vista="${vista}" data-placa="${esc(placa)}">
              </label>
-             <button type="button" class="text-[12px] text-on-surface-variant underline min-h-[32px]" data-accion="valetFotoEjemplo" data-vista="${vista}" data-placa="${esc(placa)}">Usar foto de ejemplo</button>`}
+             <button type="button" class="text-label-sm text-on-surface-variant underline min-h-[32px]" data-accion="valetFotoEjemplo" data-vista="${vista}" data-placa="${esc(placa)}">Usar foto de ejemplo</button>`}
       </div>`;
     }).join('');
   }
 
   function inspeccion(item) {
     const i = item.inspeccion;
-    if (i) {
-      return `<div class="p-space-sm rounded-xl bg-ok-fondo border border-ok-borde text-ok-texto flex flex-col gap-2">
+    const puede = ['ACEPTADO', 'ENTREGADO_A_VALET', 'EN_FILA', 'ESTACIONADO', 'LLAVES_EN_CUSTODIA'].includes(item.estado);
+    if (!puede) {
+      return `<p class="text-body-md text-on-surface-variant">Recibe el vehículo para poder inspeccionarlo.</p>`;
+    }
+    const guardada = i
+      ? `<div class="p-space-sm rounded-xl bg-ok-fondo border border-ok-borde text-ok-texto flex flex-col gap-2">
         <b class="text-label-md">Inspección registrada</b>
         <span>Combustible ${esc(i.combustible)} · ${i.km.toLocaleString('es-CO')} km · ${(i.fotos || []).length}/4 fotos</span>
         ${i.novedades ? `<span>Novedades: ${esc(i.novedades)}</span>` : '<span>Sin novedades</span>'}
         ${(i.fotos || []).length ? `<div class="grid grid-cols-4 gap-1">${i.fotos.map((f) => `<img src="${f.dataUrl}" alt="Foto ${esc(f.vista)}" class="w-full h-14 object-cover rounded-md">`).join('')}</div>` : ''}
-      </div>`;
-    }
-    if (!['ENTREGADO_A_VALET', 'EN_FILA'].includes(item.estado) && item.estado !== 'ACEPTADO') {
-      return `<p class="text-body-md text-on-surface-variant">Recibe el vehículo para poder inspeccionarlo.</p>`;
-    }
-    return `<div class="flex flex-col gap-space-sm" data-key="inspeccion">
-      <p class="text-label-md text-on-surface">Fotos del acta (máx. 4; se reducen a 480 px en el navegador)</p>
+      </div>`
+      : '';
+    return `${guardada}
+      <div class="flex flex-col gap-space-sm" data-key="inspeccion">
+      <p class="text-label-md text-on-surface">${i ? 'Agregar o reemplazar fotos del acta' : 'Fotos del acta'} (máx. 4; se reducen a 480 px en el navegador)</p>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${miniaturas(item.placa)}</div>
       <div class="grid grid-cols-2 gap-2">
         <label class="text-label-md text-on-surface">Combustible
           <select id="op-combustible" class="w-full min-h-[44px] mt-1 rounded-lg bg-surface-container-lowest border border-outline-variant px-2">
-            ${['vacío', '1/4', '1/2', '3/4', 'lleno'].map((c) => `<option value="${c}"${c === '1/2' ? ' selected' : ''}>${c}</option>`).join('')}
+            ${['vacío', '1/4', '1/2', '3/4', 'lleno'].map((c) => `<option value="${c}"${c === (i ? i.combustible : '1/2') ? ' selected' : ''}>${c}</option>`).join('')}
           </select>
         </label>
         <label class="text-label-md text-on-surface">Kilómetros
-          <input id="op-km" type="number" min="0" value="48000" class="w-full min-h-[44px] mt-1 rounded-lg bg-surface-container-lowest border border-outline-variant px-2">
+          <input id="op-km" type="number" min="0" value="${i ? i.km : 48000}" class="w-full min-h-[44px] mt-1 rounded-lg bg-surface-container-lowest border border-outline-variant px-2">
         </label>
       </div>
       <label class="text-label-md text-on-surface">Novedades (máx. 140)
-        <input id="op-novedades" maxlength="140" placeholder="Ej.: rayón en la puerta derecha" class="w-full min-h-[44px] mt-1 rounded-lg bg-surface-container-lowest border border-outline-variant px-2">
+        <input id="op-novedades" maxlength="140" value="${esc(i ? i.novedades : '')}" placeholder="Ej.: rayón en la puerta derecha" class="w-full min-h-[44px] mt-1 rounded-lg bg-surface-container-lowest border border-outline-variant px-2">
       </label>
       <button type="button" class="min-h-[44px] rounded-xl bg-primary-container text-on-primary text-label-md" data-accion="valetGuardarInspeccion" data-placa="${esc(item.placa)}">Guardar inspección</button>
     </div>`;
@@ -131,7 +133,7 @@
       ['Celda', (ub && ub.celdaId) || item.celdaId || 'Sin celda todavía'],
       ['Caja de llaves', (ub && ub.casillero) ? 'Caja ' + ub.casillero : (item.casillero ? 'Caja ' + item.casillero : 'Sin llaves en custodia')]
     ];
-    const foco = item.celdaId ? { celda: item.celdaId, lote: item.zona } : {};
+    const foco = item.celdaId ? { celda: item.celdaId, lote: item.zona, placa: item.placa } : {};
     const puedeGuardar = item.estado === 'ESTACIONADO' || item.estado === 'LLAVES_EN_CUSTODIA';
     return `<div class="flex flex-col gap-space-sm" data-key="donde">
       <dl class="grid grid-cols-1 gap-1">
@@ -148,9 +150,37 @@
     </div>`;
   }
 
+  // Paso del carro dentro del campus: portería y estacionamiento, sin salir de esta vista.
+  function pasoVehiculo(item) {
+    if (item.estadoVehiculo === 'EN_RECORRIDO') {
+      return `<button type="button" class="min-h-[44px] rounded-xl bg-primary-container text-on-primary text-label-md" data-accion="valetConfirmarEstacionado" data-placa="${esc(item.placa)}">Confirmar estacionado en ${esc(item.celdaId || 'su celda')}</button>`;
+    }
+    const fila = App.fila(item.acceso);
+    const primero = fila[0] && fila[0].placa === item.placa;
+    if (item.estadoVehiculo === 'CELDA_ASIGNADA' && primero && item.celdaId) {
+      return `<button type="button" class="min-h-[44px] rounded-xl bg-primary-container text-on-primary text-label-md" data-accion="valetPasarPorteria" data-placa="${esc(item.placa)}">Pasar portería ${esc(App.NOMBRE_ACCESO[item.acceso])} → ${esc(item.celdaId)}</button>`;
+    }
+    if (item.estadoVehiculo === 'CELDA_ASIGNADA') {
+      return `<p class="text-body-md text-on-surface-variant">Tiene celda ${esc(item.celdaId)}, pero aún hay carros delante en la fila de ${esc(App.NOMBRE_ACCESO[item.acceso])}.</p>`;
+    }
+    if (item.estadoVehiculo === 'AFUERA') {
+      return `<p class="text-body-md text-on-surface-variant">Espera afuera: la pasarela de ${esc(App.NOMBRE_ACCESO[item.acceso])} está llena.</p>`;
+    }
+    return '';
+  }
+
   function entrega(item) {
+    if (item.estado === 'LLAVES_EN_CUSTODIA') {
+      return `<div class="flex flex-col gap-space-sm">
+        <p class="text-body-md text-on-surface-variant">El carro está estacionado y las llaves en custodia. Puedes traerlo a la bahía sin esperar a que el estudiante lo pida.</p>
+        <button type="button" class="min-h-[44px] rounded-xl bg-primary-container text-on-primary text-label-md" data-accion="valetTraerBahia" data-placa="${esc(item.placa)}">Traer el carro a bahía (~4 min)</button>
+      </div>`;
+    }
+    if (item.estado === 'SOLICITADO' || item.estado === 'EN_TRASLADO') {
+      return `<p class="text-body-md text-on-surface-variant">El carro va en traslado a la bahía. Avanza el reloj y aquí aparecerá el campo del PIN.</p>`;
+    }
     if (item.estado !== 'LISTO_EN_BAHIA') {
-      return `<p class="text-body-md text-on-surface-variant">La entrega con PIN se habilita cuando el carro está listo en bahía.</p>`;
+      return `<p class="text-body-md text-on-surface-variant">La entrega con PIN se habilita cuando el carro está en bahía.</p>`;
     }
     return `<div class="flex flex-col gap-space-sm" data-key="entrega">
       <label class="text-label-md text-on-surface">PIN que muestra el estudiante
@@ -173,23 +203,25 @@
       ${aviso}
       <header class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2">${placaHTML(item.placa, true)}<span class="text-label-lg text-on-surface">${esc(item.conductor || '—')}</span></div>
-        <span class="text-[12px] uppercase tracking-wide text-on-surface-variant">${esc(TEXTO_ESTADO[item.estado] || item.estado)}</span>
+        <span class="text-label-sm uppercase tracking-wide text-on-surface-variant">${esc(TEXTO_ESTADO[item.estado] || item.estado)} · ${esc(item.estadoVehiculo)}</span>
       </header>
       <p class="text-body-md text-on-surface-variant">Ticket <b class="text-on-surface">${esc(item.ticket || '—')}</b> · Operador ${esc(item.operador || 'sin asignar')} · Tarifa ${item.tarifa ? '$' + item.tarifa.toLocaleString('es-CO') : '—'}</p>
       ${pasosHTML(item)}
       <h3 class="text-label-lg text-on-surface">1. Aceptar · 2. Recibir e inspeccionar</h3>
       ${aceptar}${recibir}
       ${inspeccion(item)}
-      <h3 class="text-label-lg text-on-surface">3. Dónde quedó y llaves</h3>
+      <h3 class="text-label-lg text-on-surface">3. Estacionar</h3>
+      ${pasoVehiculo(item)}
+      <h3 class="text-label-lg text-on-surface">4. Dónde quedó y llaves</h3>
       ${dondeQuedo(item)}
-      <h3 class="text-label-lg text-on-surface">4. Entregar</h3>
+      <h3 class="text-label-lg text-on-surface">5. Entregar</h3>
       ${entrega(item)}
     </div>`;
   }
 
   App.pantallas.valetOperador = function () {
     const lista = App.engine.valetListar();
-    const activos = lista.filter((i) => i.estado !== 'DEVUELTO');
+    const activos = lista.filter((i) => i.estado !== 'DEVUELTO' && i.estado !== 'SELECCIONADO');
     const sel = u().placa && activos.some((i) => i.placa === u().placa) ? u().placa : (activos[0] || {}).placa;
     const item = lista.filter((i) => i.placa === sel)[0];
     const selector = `<label class="text-label-md text-on-surface-variant flex items-center gap-2">Soy:
@@ -246,6 +278,17 @@
 
   App.acciones.valetConfirmarEstacionado = function (el) {
     responder(App.engine.estacionar(el.dataset.placa), 'Vehículo estacionado.');
+  };
+
+  App.acciones.valetPasarPorteria = function (el) {
+    const item = App.engine.valetListar().filter((i) => i.placa === el.dataset.placa)[0];
+    if (!item) return;
+    responder(App.engine.confirmarPorteria(item.acceso, item.placa), 'Portería confirmada: el carro ya va a su celda.');
+  };
+
+  // El operador también puede traer el carro a la bahía sin esperar la solicitud del estudiante.
+  App.acciones.valetTraerBahia = function (el) {
+    responder(App.engine.valetSolicitarCarro(el.dataset.placa), 'Carro en traslado a bahía: avanza el reloj unos 4 min.');
   };
 
   App.acciones.valetGuardarUbicacion = function (el) {

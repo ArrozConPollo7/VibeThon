@@ -166,8 +166,22 @@
 
   function accionCelda(v) {
     if (v.valet && v.valet.estado !== 'SELECCIONADO' && v.valet.estado !== 'PAGADO') {
-      return `<p class="${clases.nota} text-center">El valet lleva tu carro. Sigue el avance en la pestaña Valet.</p>
-        <button type="button" class="${clases.primario}" data-accion="irTab" data-tab="valet">${icono('directions_car', 22)}Ver mi valet</button>`;
+      const estado = v.valet.estado;
+      const verValet = `<button type="button" class="${clases.secundario}" data-accion="irTab" data-tab="valet">${icono('directions_car', 20)}Ver mi valet</button>`;
+      if (estado === 'LLAVES_EN_CUSTODIA') {
+        return `<button type="button" class="${clases.primario}" data-accion="solicitarCarro">${icono('directions_car', 22)}Reclamar mi vehículo</button>
+          <p class="${clases.nota} text-center">Está en ${esc(App.nombreZona(v.celdaId ? (App.celdas().find((c) => c.id === v.celdaId) || {}).zona : ''))}, celda ${esc(v.celdaId || '—')}. Lo llevamos a la bahía en unos 4 min.</p>
+          ${verValet}`;
+      }
+      if (estado === 'SOLICITADO' || estado === 'EN_TRASLADO') {
+        return `<button type="button" class="${clases.primario}" disabled>${icono('schedule', 22)}Tu carro viene en camino</button>
+          <p class="${clases.nota} text-center">Reclamado. Sigue el traslado en la pestaña Valet.</p>${verValet}`;
+      }
+      if (estado === 'LISTO_EN_BAHIA') {
+        return `<button type="button" class="${clases.primario}" data-accion="irTab" data-tab="valet">${icono('vpn_key', 22)}Mostrar mi PIN en la bahía</button>
+          <p class="${clases.nota} text-center">Tu carro ya está listo en la bahía de entrega.</p>`;
+      }
+      return `<p class="${clases.nota} text-center">El valet lleva tu carro. Sigue el avance en la pestaña Valet.</p>${verValet}`;
     }
     if (v.estado === 'CELDA_ASIGNADA') {
       const primero = App.fila(v.acceso)[0] === v;

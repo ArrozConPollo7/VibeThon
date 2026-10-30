@@ -142,14 +142,39 @@
     const pasos = hitos.map((h, i) => ({ ...h, estado: i === ultimo ? 'actual' : h.hecho ? 'hecho' : 'pendiente' }));
     const puedeSolicitar = estado === 'LLAVES_EN_CUSTODIA';
     const chip = puedeSolicitar ? App.chip('libre', 'Custodia activa') : App.chip('reservada', 'En proceso');
+    const ubicacion = v.valet.ubicacion;
     return `<div class="flex flex-col gap-space-md">
       ${tarjetaVehiculo(v, chip)}
       ${tarjetaOperador(v)}
       <section class="${clases.tarjeta}"><h2 class="${clases.titulo}">Sigue tu carro</h2>${App.stepper(pasos, 'Estado del valet')}</section>
+      ${
+        ubicacion
+          ? `<section class="${clases.tarjeta}">
+        <h2 class="${clases.titulo}">Dónde quedó tu carro</h2>
+        <div class="grid grid-cols-2 gap-space-xs">
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Parqueadero</span><span class="text-label-lg text-on-surface">${esc(ubicacion.nombreZona || '—')}</span></div>
+          <div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col"><span class="${clases.nota}">Celda</span><span class="text-label-lg text-on-surface">${esc(ubicacion.celdaId || v.celdaId || '—')}</span></div>
+        </div>
+        ${ubicacion.nota ? `<p class="${clases.nota}">${esc(ubicacion.nota)}</p>` : ''}
+        ${ubicacion.casillero ? `<p class="${clases.nota}">Llaves en la caja ${esc(ubicacion.casillero)}</p>` : ''}
+      </section>`
+          : ''
+      }
+      ${
+        v.valet.inspeccion
+          ? `<section class="${clases.tarjeta}">
+        <h2 class="${clases.titulo}">Acta de inspección</h2>
+        <p class="${clases.nota}">Combustible ${esc(v.valet.inspeccion.combustible)} · ${v.valet.inspeccion.km.toLocaleString('es-CO')} km · ${(v.valet.inspeccion.fotos || []).length}/4 fotos</p>
+        ${(v.valet.inspeccion.fotos || []).length
+          ? `<div class="grid grid-cols-4 gap-1">${v.valet.inspeccion.fotos.map((f, i) => `<button type="button" class="p-0 border-0 bg-transparent" data-accion="ampliarFoto" data-placa="${esc(v.placa)}" data-foto="${i}" aria-label="Ampliar foto ${esc(f.vista)}"><img src="${f.dataUrl}" alt="Foto ${esc(f.vista)}" class="w-full h-14 object-cover rounded-md"></button>`).join('')}</div>`
+          : `<p class="${clases.nota}">El operador aún no ha subido fotos.</p>`}
+      </section>`
+          : ''
+      }
       <section class="${clases.tarjeta}"><h2 class="${clases.titulo}">Punto de entrega</h2>${puntoEntrega(v)}</section>
       <div class="flex flex-col items-center gap-2">
-        <button type="button" class="${clases.primario}" data-accion="solicitarCarro"${puedeSolicitar ? '' : ' disabled'}>${icono('directions_car', 22)}Pedir que traigan mi vehículo</button>
-        ${puedeSolicitar ? '' : `<p class="${clases.nota} text-center">Disponible cuando tus llaves estén en el casillero.</p>`}
+        <button type="button" class="${clases.primario}" data-accion="solicitarCarro"${puedeSolicitar ? '' : ' disabled'}>${icono('directions_car', 22)}Reclamar mi vehículo</button>
+        ${puedeSolicitar ? `<p class="${clases.nota} text-center">Lo traen a la bahía en unos 4 min. Después muestra tu PIN al operador.</p>` : `<p class="${clases.nota} text-center">Disponible cuando tus llaves estén en el casillero.</p>`}
       </div>
     </div>`;
   }

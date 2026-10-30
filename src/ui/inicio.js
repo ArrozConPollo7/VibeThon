@@ -3,9 +3,9 @@
   const { esc, icono, clases } = App;
   const SECTORES = {
     CARRO: [
-      { zona: 'N', acceso: 'REGIONAL', detalle: 'Acceso Regional', ico: 'local_library' },
-      { zona: 'I', acceso: 'LAS_VEGAS', detalle: 'Acceso Las Vegas', ico: 'precision_manufacturing' },
-      { zona: 'G', detalle: 'Se asigna por orden de llegada', ico: 'translate' }
+      { zona: 'N', detalle: 'Entradas: Regional y Calle 4 Sur', ico: 'local_library' },
+      { zona: 'I', detalle: 'Entradas: Las Vegas y Carrera 49', ico: 'precision_manufacturing' },
+      { zona: 'G', detalle: 'Entradas: Guayabos y Loma', ico: 'translate' }
     ],
     MOTO: [{ zona: 'M', detalle: 'Celdas de moto', ico: 'two_wheeler' }]
   };
@@ -69,27 +69,34 @@
     </section>`;
   }
 
+  // Una fila por entrada: así se ve la coordinación entre las dos entradas de cada parqueadero.
+  function accesoFila(acceso, r) {
+    const d = r.accesos[acceso] || {};
+    const activo = App.ui.form.acceso === acceso;
+    const llena = (d.enPasarela || 0) >= (d.capacidad || 0);
+    return `<button type="button" class="w-full min-h-[44px] rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-left ${activo ? 'bg-surface-container-high ring-1 ring-primary-container' : 'bg-surface-container-lowest'}" data-accion="elegirAcceso" data-acceso="${acceso}" aria-pressed="${activo}">
+      <span class="flex items-center gap-2 min-w-0"><span class="text-primary-container">${icono('contactless', 18)}</span><span class="text-label-md text-on-surface">${esc(App.NOMBRE_ACCESO[acceso])}</span>${d.recomendado ? App.chipMarca('Recomendado') : ''}</span>
+      <span class="${clases.nota}">Pasarela <b class="text-on-surface">${d.enPasarela || 0}/${d.capacidad || 0}</b>${llena ? ' (llena)' : ''} · <b class="text-on-surface">${d.afuera || 0}</b> afuera · ${esc(d.esperaTexto || '')}</span>
+    </button>`;
+  }
+
   function sector(s, tipo, r) {
     const c = conteo(celdasDe(tipo, s.zona));
-    const datos = s.acceso ? r.accesos[s.acceso] : null;
-    const interior = `<span class="flex items-start justify-between gap-space-xs w-full">
+    const accesos = tipo === 'CARRO' ? App.accesosDeLote(s.zona) : [];
+    return `<article class="${clases.tarjeta}">
+      <span class="flex items-start justify-between gap-space-xs w-full">
         <span class="flex items-center gap-space-xs min-w-0">
           <span class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary-container shrink-0">${icono(s.ico, 22)}</span>
           <span class="min-w-0 flex flex-col"><span class="text-label-lg text-on-surface">${esc(App.nombreZona(s.zona))}</span><span class="text-label-sm text-on-surface-variant">${s.detalle}</span></span>
         </span>
-        ${datos && datos.recomendado ? App.chipMarca('Recomendado') : ''}
       </span>
       <span class="flex items-center gap-2 pt-1 flex-wrap">
         ${App.chip('libre', `${c.libres} libres`)}${App.chip('reservada', `${c.reservadas} reservadas`)}${App.chip('ocupada', `${c.ocupadas} ocupadas`)}
       </span>
-      ${
-        datos
-          ? `<span class="text-label-sm text-on-surface-variant">Pasarela <b class="text-on-surface">${datos.enPasarela}/${datos.capacidad}</b>${datos.enPasarela >= datos.capacidad ? ' (llena)' : ''}, <b class="text-on-surface">${datos.afuera}</b> afuera, espera <b class="text-on-surface">${esc(datos.esperaTexto)}</b></span>`
-          : ''
-      }`;
-    if (!s.acceso) return `<article class="${clases.tarjeta}">${interior}</article>`;
-    const activo = App.ui.form.acceso === s.acceso;
-    return `<button type="button" class="${clases.tarjeta} text-left ${activo ? 'ring-2 ring-primary-container' : ''}" data-accion="elegirAcceso" data-acceso="${s.acceso}" aria-pressed="${activo}">${interior}</button>`;
+      ${accesos.length
+        ? `<div class="flex flex-col gap-1.5 pt-1" role="group" aria-label="Entradas de ${esc(App.nombreZona(s.zona))}">${accesos.map((a) => accesoFila(a, r)).join('')}</div>`
+        : `<span class="${clases.nota}">${s.detalle}</span>`}
+    </article>`;
   }
 
   function sectores(tipo, r) {
@@ -184,6 +191,11 @@
       </label>
       ${f.preferenciaCelda ? `<p class="${clases.nota}">Celda preferida: <b>${esc(f.preferenciaCelda)}</b> · <button type="button" class="underline" data-accion="quitarPreferenciaCelda">quitar</button></p>` : ''}
       <p class="${clases.nota}">Tu preferencia no te adelanta en la fila: cuando llegue tu turno, te damos esa celda o ese parqueadero si están libres; si no, la más cercana.</p>
+      <label class="${clases.etiqueta}"><span>Hora de llegada (opcional)</span>
+        <input type="time" name="horaLlegada" data-campo="form.horaLlegada" value="${esc(f.horaLlegada)}" min="06:00" class="${clases.entrada}"${f.errores.horaLlegada ? ' aria-invalid="true" aria-describedby="error-horaLlegada"' : ''}>
+      </label>
+      ${campoError('horaLlegada')}
+      <p class="${clases.nota}">Vacía = ahora (${App.hora(App.engine.state.clock)}). Puedes simular una entrada desde las 06:00; esa hora ordena tu lugar en la fila.</p>
       <label class="${clases.etiqueta}"><span>¿A qué hora es tu clase? (opcional)</span>
         <input type="time" name="horaClase" data-campo="form.horaClase" value="${esc(f.horaClase)}" class="${clases.entrada}"${f.errores.horaClase ? ' aria-invalid="true" aria-describedby="error-horaClase"' : ''}>
       </label>
@@ -243,9 +255,15 @@
   function validar(f) {
     const errores = {};
     if (!App.RE_NOMBRE.test(f.nombre.trim())) errores.nombre = 'Escribe tu nombre: de 2 a 40 letras y espacios.';
+    const ahora = App.engine.state.clock;
+    const llegada = minutosDe(f.horaLlegada);
+    if (llegada != null && (llegada < 360 || llegada > ahora)) {
+      errores.horaLlegada = `La llegada debe estar entre las 06:00 y las ${App.hora(ahora)}.`;
+    }
+    const referencia = llegada != null ? llegada : ahora;
     const hora = minutosDe(f.horaClase);
-    if (hora != null && hora <= App.engine.state.clock) {
-      errores.horaClase = `La clase debe ser después de las ${App.hora(App.engine.state.clock)}.`;
+    if (hora != null && hora <= referencia) {
+      errores.horaClase = `La clase debe ser después de las ${App.hora(referencia)}.`;
     }
     return errores;
   }
@@ -286,6 +304,7 @@
       placa: f.placa,
       conductor: f.nombre.trim(),
       acceso,
+      horaLlegada: minutosDe(f.horaLlegada),
       horaClase: minutosDe(f.horaClase),
       valet: f.valet,
       preferencia: (f.preferenciaZona || f.preferenciaCelda)
@@ -302,7 +321,7 @@
       fijada: true,
       maxPosicion,
       tab: f.valet ? 'valet' : 'turno',
-      form: { ...f, placa: '', nombre: '', horaClase: '', valet: false, preferenciaZona: '', preferenciaCelda: '', errores: {} }
+      form: { ...f, placa: '', nombre: '', horaLlegada: '', horaClase: '', valet: false, preferenciaZona: '', preferenciaCelda: '', errores: {} }
     });
   };
 })();

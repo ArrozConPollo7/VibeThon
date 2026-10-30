@@ -1,8 +1,12 @@
 // Núcleo de la interfaz: estado de la vista, lectura del motor, re-render y toasts.
 // La UI nunca cambia el estado del motor directamente: llama sus funciones y re-renderiza.
 window.App = (function () {
-  const NOMBRE_ACCESO = { REGIONAL: 'Regional', LAS_VEGAS: 'Las Vegas' };
-  const ACCESOS = ['REGIONAL', 'LAS_VEGAS'];
+  // Los accesos salen de src/data.js: dos entradas por parqueadero (6 en total).
+  const DATOS_ACCESOS = (window.ParkData && window.ParkData.accesos) || {};
+  const ACCESOS = Object.keys(DATOS_ACCESOS);
+  const NOMBRE_ACCESO = Object.fromEntries(
+    Object.entries(DATOS_ACCESOS).map(([id, a]) => [id, a.nombre || id])
+  );
   const RE_CARRO = /^[A-Z]{3}[0-9]{3}$/;
   const RE_MOTO = /^[A-Z]{3}[0-9]{2}[A-Z]$/;
   const RE_NOMBRE = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,40}$/;
@@ -16,7 +20,7 @@ window.App = (function () {
     tab: 'inicio',
     placa: null,
     fijada: false,
-    form: { placa: '', nombre: '', acceso: null, horaClase: '', valet: false, errores: {} },
+    form: { placa: '', nombre: '', acceso: null, horaLlegada: '', horaClase: '', valet: false, preferenciaZona: '', preferenciaCelda: '', errores: {} },
     valet: { metodo: 'TARJETA', dejeCarro: false, entregueLlaves: false },
     porteria: { acceso: 'REGIONAL', placa: '', editada: false, resultado: null },
     sim: { corriendo: false, velocidad: 1 },
@@ -63,7 +67,8 @@ window.App = (function () {
     const zonas = window.ParkData ? window.ParkData.zonas : {};
     return zonas[zona] ? zonas[zona].nombre : `Zona ${zona}`;
   };
-  App.loteAcceso = (acceso) => (window.ParkData ? window.ParkData.accesos[acceso].lote : null);
+  App.loteAcceso = (acceso) => (DATOS_ACCESOS[acceso] ? DATOS_ACCESOS[acceso].lote : null);
+  App.accesosDeLote = (lote) => ACCESOS.filter((a) => DATOS_ACCESOS[a].lote === lote);
 
   // Lecturas del motor (forma fijada en TAREA_01B §2).
   App.vehiculos = () => App.engine.state.vehiculos;

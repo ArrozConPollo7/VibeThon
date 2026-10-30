@@ -253,3 +253,7 @@ body {
   transition: none !important;
   scroll-behavior: auto !important;
 }
+
+/* Entradas del campus: dos por parqueadero (capa de mapa.js). */
+.acceso-punto { fill: rgb(var(--primary-container)); stroke: rgb(var(--surface-container-lowest)); stroke-width: 2; }
+.acceso-nombre { font: 700 12px 'Inter', system-ui, sans-serif; fill: rgb(var(--primary-container)); paint-order: stroke; stroke: rgb(var(--surface-container-lowest)); stroke-width: 4px; }
