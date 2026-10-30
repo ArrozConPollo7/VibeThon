@@ -1,7 +1,6 @@
-// Pantallas 5.2 (Mi turno) y 5.3 (Celda asignada) del conductor.
+// Pantalla Mi turno (Stitch: "Mi Turno y Acceso"): espera en fila y ticket con celda asignada.
 (function () {
   const { esc, placaHTML, icono } = App;
-  const RADIO_ANILLO = 40;
   const ESTADOS_LINEA = ['Registrado', 'Celda asignada', 'Portería', 'En recorrido', 'Estacionado'];
 
   function indiceEstado(v) {
@@ -13,20 +12,38 @@
 
   function lineaEstados(v) {
     const actual = indiceEstado(v);
-    return `<ol class="linea" aria-label="Estado de tu turno">
+    return `<section class="tarjeta"><h2 class="titulo-seccion">Tu recorrido</h2>
+      <ol class="linea" aria-label="Estado de tu turno">
       ${ESTADOS_LINEA.map((texto, i) => {
         const clase = i < actual ? 'linea-paso--hecho' : i === actual ? 'linea-paso--actual' : '';
         return `<li class="linea-paso ${clase}"${i === actual ? ' aria-current="step"' : ''}>${texto}</li>`;
       }).join('')}
-    </ol>`;
+      </ol></section>`;
   }
 
-  function encabezado(v) {
-    return `<header class="encabezado-turno">
-      ${placaHTML(v.placa)}
-      ${App.chipTipo(App.tipoVehiculo(v))}
-      <p>${App.NOMBRE_ACCESO[v.acceso]}, registrado a las ${App.hora(v.registradoEn != null ? v.registradoEn : v.llegadaAfueraEn)}</p>
-    </header>`;
+  const horaRegistro = (v) => (v.registradoEn != null ? v.registradoEn : v.llegadaAfueraEn);
+
+  function ticket(v, cuerpo) {
+    return `<section class="ticket">
+      <header class="ticket-cab">
+        <span class="marca-signo" aria-hidden="true">P</span>
+        <div class="ticket-id"><b>ParkEAFIT Pass</b><span>Ticket #TK-${v.seq == null ? 'pendiente' : esc(v.seq)}</span></div>
+        <div class="ticket-vehiculo">${placaHTML(v.placa)}${App.chipTipo(App.tipoVehiculo(v))}</div>
+      </header>
+      ${cuerpo}
+      <dl class="ticket-pie">
+        <div><dt>Registro</dt><dd>${App.hora(horaRegistro(v))}</dd></div>
+        <div><dt>Acceso</dt><dd>${App.NOMBRE_ACCESO[v.acceso]}</dd></div>
+        <div><dt>Conductor</dt><dd>${esc(v.conductor)}</dd></div>
+      </dl>
+    </section>`;
+  }
+
+  function tiempoTranscurrido(v) {
+    const minutos = Math.max(0, App.engine.state.clock - horaRegistro(v));
+    return `<section class="tarjeta tiempo">
+      ${icono('reloj', 22)}<span>Tiempo transcurrido</span><b>${minutos} min</b>
+    </section>`;
   }
 
   // Progreso relativo a la peor posición que ha tenido este carro.
@@ -34,14 +51,6 @@
     const mayor = Math.max(App.ui.maxPosicion[placa] || 0, k);
     if (mayor !== App.ui.maxPosicion[placa]) App.ui.maxPosicion = { ...App.ui.maxPosicion, [placa]: mayor };
     return Math.round(((mayor - k + 1) / (mayor + 1)) * 100);
-  }
-
-  function anilloEspera(progreso) {
-    const circunferencia = 2 * Math.PI * RADIO_ANILLO;
-    return `<svg class="anillo" viewBox="0 0 100 100" role="progressbar" aria-valuenow="${progreso}" aria-valuemin="0" aria-valuemax="100" aria-label="Avance hacia tu celda">
-      <circle class="anillo-pista" cx="50" cy="50" r="${RADIO_ANILLO}"/>
-      <circle class="anillo-valor" cx="50" cy="50" r="${RADIO_ANILLO}" stroke-dasharray="${circunferencia}" stroke-dashoffset="${circunferencia * (1 - progreso / 100)}"/>
-    </svg>`;
   }
 
   function esperaBloque(v, p) {
@@ -53,7 +62,7 @@
     const progreso = progresoCelda(v.placa, p.posicionGlobalCelda || 1);
     return `<section class="tarjeta">
       <h2 class="titulo-seccion">Espera para recibir celda</h2>
-      <div class="anillo-bloque">${anilloEspera(progreso)}<p class="cifra"><strong>${esc(espera.texto)}</strong></p></div>
+      <div class="anillo-bloque">${App.anillo(progreso, 'Avance hacia tu celda', `${progreso}%`)}<p class="cifra"><strong>${esc(espera.texto)}</strong></p></div>
       <p class="nota">Vas ${p.posicionGlobalCelda || 1}.º entre ${App.tipoVehiculo(v) === 'MOTO' ? 'las motos' : 'los carros'} que esperan celda en ambos accesos.</p>
     </section>`;
   }
@@ -92,14 +101,17 @@
     const afuera = v.estado === 'AFUERA';
     const numero = afuera ? p.delante + 1 : p.posicionEnPasarela || p.delante + 1;
     const vehiculos = (n) => `${n} ${n === 1 ? 'vehículo' : 'vehículos'}`;
-    return `<div class="pantalla" data-key="p-espera">
-      ${encabezado(v)}
-      ${afuera ? `<section class="aviso aviso--atencion">${icono('alerta')}<p><b>Pasarela llena: esperas afuera.</b> Entras cuando se libere un cupo.</p></section>` : ''}
-      <section class="tarjeta posicion" aria-live="polite" aria-atomic="true">
+    const cuerpo = `<div class="posicion" aria-live="polite" aria-atomic="true">
         <p class="posicion-rotulo">Posición</p>
         <div class="posicion-marco"><p class="posicion-numero" data-key="pos-${numero}">${numero}</p></div>
         <p>${vehiculos(p.delante)} delante · ${p.detras} detrás</p>
-      </section>
+      </div>`;
+    const chip = afuera ? '<span class="chip chip--reservada">Afuera</span>' : '<span class="chip chip--marca">En fila</span>';
+    return `<div class="pantalla" data-key="p-espera">
+      ${App.tituloPantalla('Mi turno y acceso', chip)}
+      ${afuera ? `<section class="aviso aviso--atencion">${icono('alerta')}<p><b>Pasarela llena: esperas afuera.</b> Entras cuando se libere un cupo.</p></section>` : ''}
+      ${tiempoTranscurrido(v)}
+      ${ticket(v, cuerpo)}
       ${alertaClase(v)}
       ${esperaBloque(v, p)}
       ${interruptorSalida(v)}
@@ -107,7 +119,7 @@
         <summary>¿Cómo se reparten las celdas?</summary>
         <p>${esc(window.ParkEngine.POLITICA_TEXTO)}</p>
       </details>
-      <section class="tarjeta"><h2 class="titulo-seccion">Tu recorrido</h2>${lineaEstados(v)}</section>
+      ${lineaEstados(v)}
     </div>`;
   }
 
@@ -138,7 +150,7 @@
       const primero = App.fila(v.acceso)[0] === v;
       const orden = App.fila(v.acceso).indexOf(v) + 1;
       return `<button type="button" class="boton boton--primario" disabled>Esperando portería…</button>
-        <p class="nota">${primero ? 'Eres el primero de la fila: muestra tu código en portería.' : `Vas ${orden}.º en la fila. Disponible cuando seas el primero y portería te confirme.`}</p>`;
+        <p class="nota nota--centro">${primero ? 'Eres el primero de la fila: muestra tu código en portería.' : `Vas ${orden}.º en la fila. Disponible cuando seas el primero y portería te confirme.`}</p>`;
     }
     if (v.estado === 'EN_RECORRIDO') {
       return '<button type="button" class="boton boton--primario" data-accion="estacionar">Llegué a mi celda</button>';
@@ -161,6 +173,7 @@
     const otroLote = Boolean(App.loteAcceso(v.acceso)) && App.loteAcceso(v.acceso) !== ruta.lote;
     const etiqueta = `Mapa: ${r.libresPorTipo.CARRO} celdas libres de ${r.totalPorTipo.CARRO}. Tu celda: ${v.celdaId}`;
     return `<section class="tarjeta tarjeta--plano">
+      <h2 class="titulo-seccion">Ruta en campus</h2>
       ${App.mapas.hueco('celular', etiqueta, { celda: v.celdaId, lote: ruta.lote, placa: v.placa, verTodo: otroLote })}
       ${App.mapas.leyenda()}
       ${otroLote ? `<p class="nota">Entraste por ${App.NOMBRE_ACCESO[v.acceso]}, pero el parqueadero es uno solo: la celda que te tocaba por orden de llegada está en ${esc(App.nombreZona(ruta.lote))}.</p>` : ''}
@@ -172,21 +185,30 @@
     const celda = App.celdas().find((c) => c.id === v.celdaId);
     const ruta = App.engine.ruta(v.placa) || {};
     const estacionado = v.estado === 'ESTACIONADO';
-    return `<div class="pantalla pantalla--entra" data-key="p-celda-${esc(v.celdaId)}">
-      <section class="banner-celda">
-        <p class="banner-titulo">${estacionado ? 'Estás en tu celda' : '¡Tienes celda!'}</p>
-        <p class="banner-celda-id">${esc(v.celdaId)}</p>
-        <p class="banner-zona">${esc(App.nombreZona(celda ? celda.zona : ''))}</p>
-        <p>Reservada para ${placaHTML(v.placa)}</p>
-      </section>
-      ${planoCelda(v, celda, ruta)}
+    const asignada = v.estado === 'CELDA_ASIGNADA';
+    const chip = estacionado ? '<span class="chip chip--libre">Estacionado</span>' : '<span class="chip chip--libre">Turno activo</span>';
+    const cuerpo = `<div class="ticket-celda">
+        <div><p class="nota">Ubicación en campus</p><b>${esc(App.nombreZona(celda ? celda.zona : ''))}</b></div>
+        <div class="ticket-celda-id"><p class="nota">Celda asignada</p><span class="celda-grande">${esc(v.celdaId)}</span></div>
+      </div>
       ${
-        v.estado === 'CELDA_ASIGNADA'
-          ? `<section class="tarjeta tarjeta--codigo">${codigoSimulado(v.placa)}<p><b>Muéstralo en portería</b><br>Lleva este código a la vista al llegar.</p></section>`
+        asignada
+          ? `<div class="ticket-corte" aria-hidden="true"></div>
+      <div class="ticket-codigo">${codigoSimulado(v.placa)}<p><b>Muéstralo en portería</b><br>Lleva este código a la vista al llegar.</p></div>`
           : ''
-      }
+      }`;
+    return `<div class="pantalla" data-key="p-celda-${esc(v.celdaId)}">
+      <section class="banner-celda">
+        <span class="banner-icono">${icono('check', 22)}</span>
+        <div><p class="banner-titulo">${estacionado ? 'Estás en tu celda' : '¡Tienes celda!'}</p>
+        <p>${estacionado ? 'Cuando quieras salir, usa el botón de abajo.' : `Reservada para ${esc(v.placa)}`}</p></div>
+      </section>
+      ${App.tituloPantalla('Mi turno y acceso', chip)}
+      ${tiempoTranscurrido(v)}
+      ${ticket(v, cuerpo)}
+      ${planoCelda(v, celda, ruta)}
       ${accionCelda(v)}
-      <section class="tarjeta"><h2 class="titulo-seccion">Tu recorrido</h2>${lineaEstados(v)}</section>
+      ${lineaEstados(v)}
     </div>`;
   }
 

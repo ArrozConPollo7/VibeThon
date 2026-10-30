@@ -44,6 +44,14 @@ Por cada prompt relevante, completar:
 - **Corrección del prompt:** nodo persistente que `morf` salta, y vista completa cuando el acceso y la celda están en lotes distintos.
 - **Cómo verificamos:** 19/19 comprobaciones del mapa (reservadas contra el motor, `RGL206` → `I-170`, moto, x10 sin recrear el nodo, tema oscuro, A++ a 390 px) y 41/41 del recorrido completo.
 
+## Prompt 5 — Rediseño con las pantallas de Stitch
+- **Herramienta:** Stitch → Claude Code
+- **Objetivo:** aplicar las 5 pantallas de Stitch y construir las faltantes con el mismo estilo.
+- **Prompt usado:** instrucción directa del usuario; diseños en `design/`.
+- **Resultado / fallo observado:** Stitch rellenó las pantallas con datos que contradicen el reto (sector Idiomas, Carpooling, valet a $6.000, conductor y fotos inventados) y con botones sin función. Las URL de descarga directa devolvieron 401: había que usar `download_file`.
+- **Corrección del prompt:** tomar de Stitch el orden y el estilo, y los datos del motor. Conviene darle a Stitch el alcance del reto antes de generar.
+- **Cómo verificamos:** recorrido automatizado con el flujo de valet hasta la calificación, mapa, temas, A++ a 390 px y sin red, más comparación de capturas contra los diseños.
+
 ## Prompt 1B — Ajustes del contrato del motor
 - **Herramienta:** Claude (arquitecto) → Hermes
 - **Fallo observado:** la especificación original no fijaba el nombre global de los datos, la forma de `state` ni el flujo del valet, y tenía un error (3 en pasarela + 1 afuera con capacidad 4). Claude Code lo detectó al construir contra el contrato.

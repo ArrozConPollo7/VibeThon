@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'on-error': '#ffffff', 'on-surface': '#131b2e', 'on-surface-variant': '#444651', 'secondary-fixed': '#ffe083', 'surface-container-low': '#f2f3ff', 'primary': '#00236f', 'on-secondary-fixed-variant': '#574500', 'surface-bright': '#faf8ff', 'on-primary-fixed': '#00164e', 'tertiary': '#003211', 'surface-container-highest': '#dae2fd', 'on-primary-container': '#90a8ff', 'surface-container': '#eaedff', 'error-container': '#ffdad6', 'on-secondary-fixed': '#231b00', 'on-secondary-container': '#6f5900', 'primary-container': '#1e3a8a', 'on-tertiary-fixed': '#002109', 'outline': '#757682', 'inverse-on-surface': '#eef0ff', 'secondary-fixed-dim': '#eec200', 'inverse-primary': '#b6c4ff', 'surface-variant': '#dae2fd', 'inverse-surface': '#283044', 'primary-fixed-dim': '#b6c4ff', 'surface-container-high': '#e2e7ff', 'surface-container-lowest': '#ffffff', 'on-secondary': '#ffffff', 'tertiary-container': '#004b1d', 'surface-tint': '#4059aa', 'tertiary-fixed-dim': '#62df7d', 'secondary-container': '#fed01b', 'on-tertiary-container': '#44c365', 'surface-dim': '#d2d9f4', 'surface': '#faf8ff', 'on-error-container': '#93000a', 'on-tertiary': '#ffffff', 'tertiary-fixed': '#7ffc97', 'primary-fixed': '#dce1ff', 'background': '#faf8ff', 'outline-variant': '#c5c5d3', 'on-tertiary-fixed-variant': '#005320', 'on-primary': '#ffffff', 'on-primary-fixed-variant': '#264191', 'secondary': '#735c00', 'error': '#ba1a1a', 'on-background': '#131b2e' }, borderRadius: { 'DEFAULT': '0.25rem', 'lg': '0.5rem', 'xl': '0.75rem', 'full': '9999px' }, spacing: { 'space-sm': '0.75rem', 'space-xl': '1.5rem', 'gutter': '1rem', 'space-md': '1rem', 'margin': '1rem', 'space-xs': '0.5rem', 'space-lg': '1.25rem' }, fontFamily: { 'headline-lg': ['Inter'], 'body-md': ['Inter'], 'headline-md': ['Inter'], 'label-lg': ['Inter'], 'label-md': ['Inter'], 'body-lg': ['Inter'], 'headline-sm': ['Inter'], 'label-sm': ['Inter'] }, fontSize: { 'headline-lg': ['24px', { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '700' }], 'body-md': ['16px', { lineHeight: '24px', fontWeight: '500' }], 'headline-md': ['20px', { lineHeight: '28px', letterSpacing: '-0.01em', fontWeight: '600' }], 'label-lg': ['16px', { lineHeight: '20px', fontWeight: '600' }], 'label-md': ['14px', { lineHeight: '18px', letterSpacing: '0.01em', fontWeight: '600' }], 'body-lg': ['16px', { lineHeight: '24px', fontWeight: '400' }], 'headline-sm': ['18px', { lineHeight: '26px', letterSpacing: '-0.01em', fontWeight: '600' }], 'label-sm': ['14px', { lineHeight: '18px', fontWeight: '500' }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body-md text-on-surface flex flex-col min-h-screen"><div class="fixed top-4 inset-x-4 z-50 pointer-events-none flex flex-col gap-space-xs items-center" id="toast-container"></div><header class="fixed top-0 inset-x-0 z-40 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-xs"><img alt="ParkEAFIT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Xn-ROrWS5TPqr8hKnFhGwqc4WF1RZr2foucgemQ6XDiPP0p-Bvfx9B10xQTCbeqGb_FgwAeMhe1tROisSVWKjl3zudK_ZP09-leUb-qG-V5n4fDKcB5fQMfZqJDPw7hHN7VFryn6pDzRRPlzj8NCiI426ek1AVEKJ5CHY7HmeuuMwjwQQkrCDBXXBJPX7Gu8gr0FxGHJOOxDVBqjUmIFR056iB2RPrSexrasXIHFY"/><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Campus EAFIT</span><span class="font-headline-sm text-headline-sm text-primary-container leading-tight">ParkEAFIT</span></div></div><div class="flex items-center gap-space-xs"><button aria-label="Notificaciones" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors relative"><span class="material-symbols-outlined text-[24px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary-container"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col w-full max-w-[540px] mx-auto px-margin pt-16 pb-24 bg-background"><div class="flex flex-col w-full gap-space-md">
+<!-- Toast Notificación Superior -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-md p-space-sm flex items-center justify-between transition-all" id="banner-valet">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[20px] text-tertiary-container shrink-0" style="font-variation-settings: 'FILL' 1;">verified</span>
+<p class="font-label-sm text-label-sm text-on-surface truncate">Servicio disponible en Portería Regional y Cra. 49</p>
+</div>
+<button aria-label="Cerrar aviso" class="text-on-surface-variant hover:text-on-surface p-1 rounded-full shrink-0" onclick="document.getElementById('banner-valet').style.display='none'">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Encabezado de Página -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Servicio Valet</h1>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-tertiary-container font-label-md text-label-md">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+        En servicio
+      </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Entrega y recepción asistida en campus EAFIT</p>
+</div>
+<!-- Estado del Vehículo Actual / Ticket Valet -->
+<div class="w-full bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-sm relative overflow-hidden">
+<!-- Barra superior de acento activo -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-secondary-container"></div>
+<div class="flex items-start justify-between gap-space-xs">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md tracking-wider text-on-surface font-bold bg-surface-container px-2 py-0.5 rounded">ABC-123</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Mazda 3 Blanco</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Ticket: <span class="font-semibold text-primary-container">#VAL-4029</span></p>
+</div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-tertiary-container font-label-sm text-label-sm shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
+        Custodia Activa
+      </span>
+</div>
+<!-- Imagen ilustrativa del vehículo custodiado -->
+<div class="w-full h-36 rounded-xl overflow-hidden relative shadow-inner">
+<img alt="Vehículo Mazda 3 blanco en custodia" class="w-full h-full object-cover" data-alt="A clean white Mazda 3 sedan parked safely inside a pristine modern covered university valet pavilion in Medellin Colombia surrounded by lush tropical greenery soft daytime lighting and security markings" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLxsKSBLN_8jECQ3sUR2hagLHc82B6PHnQyUXsusbOjhIOdrZqCbmpXvYSIzBClpnZTeaQUOxgH3wRj1bYByDrIFBHQ40UgHtQy6lziETqnDEPhaUbX_HowmdYPFgUNs7Iceg4NSv-pyIl6y1sPC-_lyTQMFjjjuR0z1ElY9QvvDJPS3cEPP7h0ZXuE-bNm3JhPW-aTLIPbb7htXIT9Jdgdj3SBziVY9Irw1ImKvo"/>
+<div class="absolute bottom-2 left-2 bg-inverse-surface/80 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-inverse-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary-container">location_on</span>
+<span class="font-label-sm text-label-sm">Zona Externa Vigilada - Bloque 18</span>
+</div>
+</div>
+<!-- Tiempos e indicadores de seguridad -->
+<div class="grid grid-cols-2 gap-space-xs pt-1">
+<div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ingreso</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">07:45 AM</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2h 15m en custodia</span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-2.5 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Seguridad</span>
+<div class="flex items-center gap-1 text-primary-container">
+<span class="material-symbols-outlined text-[18px]">vpn_key</span>
+<span class="font-label-sm text-label-sm font-semibold">Caja Fuerte B-04</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary-container">Llave sellada</span>
+</div>
+</div>
+<!-- Personal Asignado -->
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-label-lg">
+          CR
+        </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-on-surface">Carlos Restrepo</span>
+<span class="material-symbols-outlined text-[16px] text-primary" title="Valet Certificado">verified</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Valet EAFIT Movilidad</span>
+</div>
+</div>
+<a class="flex items-center justify-center w-9 h-9 rounded-full bg-surface-container text-primary-container hover:bg-surface-container-high transition-colors" href="tel:+5742619500" title="Contactar a Carlos">
+<span class="material-symbols-outlined text-[20px]">call</span>
+</a>
+</div>
+</div>
+<!-- Selector Punto de Retiro y Estimación -->
+<div class="w-full bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Punto de Entrega</h2>
+<span class="font-label-md text-label-md text-primary-container font-semibold">$6.000 COP</span>
+</div>
+<div class="flex flex-col gap-space-xs" id="radio-group-retiro">
+<!-- Opción 1: Regional (Seleccionada) -->
+<label class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low cursor-pointer transition-colors" id="label-porteria-regional">
+<input checked="" class="mt-1 w-4 h-4 text-primary-container accent-primary-container" name="pickup_point" onchange="actualizarSeleccion('regional')" type="radio" value="regional"/>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Portería Regional (Principal)</span>
+<span class="font-label-sm text-label-sm text-tertiary-container font-semibold">~8 min</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Bahía de entrega rápida frente al Bloque 38</p>
+</div>
+</label>
+<!-- Opción 2: Cra 49 -->
+<label class="flex items-start gap-3 p-3 rounded-xl bg-surface-bright hover:bg-surface-container-low cursor-pointer transition-colors" id="label-porteria-49">
+<input class="mt-1 w-4 h-4 text-primary-container accent-primary-container" name="pickup_point" onchange="actualizarSeleccion('cra49')" type="radio" value="cra49"/>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Portería Cra. 49 (Ingeniería)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">~12 min</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Acceso peatonal junto al Edificio de Ingenierías</p>
+</div>
+</label>
+</div>
+<div class="flex items-center gap-2 pt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px] text-secondary-container">schedule</span>
+<span class="font-label-sm text-label-sm">Tiempo estimado: <strong class="text-on-surface">7 - 10 minutos</strong> desde solicitud</span>
+</div>
+</div>
+<!-- Protocolo de Inspección Digital -->
+<div class="w-full bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-tertiary-container">fact_check</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Inspección Digital</h2>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+        Sin novedades
+      </span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">
+      Registro fotográfico efectuado a las 07:47 AM por Carlos Restrepo. 4 tomas de carrocería y tablero.
+    </p>
+<!-- Miniaturas de fotos de inspección -->
+<div class="grid grid-cols-4 gap-2 pt-1">
+<div class="h-16 rounded-lg overflow-hidden relative shadow-sm">
+<img alt="Foto frontal del vehículo" class="w-full h-full object-cover" data-alt="Clear high resolution automotive inspection photograph showing the front bumper and headlights of a white modern car under parking lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAKjGY4Y08xZPGftRgklziJWAeLSFI7oYSbQbStZGWGsq8j5gGN384UZNjsxpvYqcKhcXNHxTko9jDbAUUWD3PtZncDNout3Aw7HyWnMVJZZcp8PFVvAtn9NAWcMJRkk7QNCs0PDpo5v2nnuggQ2z8OigcQiNISKC-rUSvWP1IsXtR7hPJNYuQB4K6W8tHVeJiJKCxEYqv82YA-sCs-WvE-OU-wtxGAebz_U3TQwE"/>
+<span class="absolute bottom-0 inset-x-0 bg-inverse-surface/70 text-inverse-on-surface font-label-sm text-[10px] text-center py-0.5">Frontal</span>
+</div>
+<div class="h-16 rounded-lg overflow-hidden relative shadow-sm">
+<img alt="Foto posterior del vehículo" class="w-full h-full object-cover" data-alt="Clear inspection photograph of the rear bumper and trunk of a white car parked in university valet zone" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCelB--hgWNK5eHmboA5oUkJcDvoMESxVtfv3onMKqP7aGGOiHfG-dRbIK5ghdIBkbArzSJjv3Cg759RIEdnRlbk9w62gODYD4s1ondo757oUjMXdhXp39AXXjvCnXqSzt94Wq2V7Dh3Ypn1GjCTLo8e0V2OPXcDSNwA4h2p-ba-mr_4MI5_CONJM74VFJshIt2DmkSZzTUmCfJFj_q7zrg9ZRrC_EirtaQvfRsmAk"/>
+<span class="absolute bottom-0 inset-x-0 bg-inverse-surface/70 text-inverse-on-surface font-label-sm text-[10px] text-center py-0.5">Trasera</span>
+</div>
+<div class="h-16 rounded-lg overflow-hidden relative shadow-sm">
+<img alt="Foto lateral izquierda" class="w-full h-full object-cover" data-alt="Automotive inspection photo displaying the pristine driver side doors and mirrors of a white sedan car" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZjvUdSaLySkwEsSl--fER9Q_ppe389FujZMTJAXICG4ONfggYkJ-3tzVG_AySdXfuoPNEaKLtldpXNiL8317EoeFyewI1WJChJ-lcgcUvmryHR4sSHDfPflvzvPLzePCsT4QaWozbqIXTLsSiQDpO7hjTjLmh0pJ9bOqpEO1wa9MY8CjsfV6su3UXgDyzGJnmUF6bocQt30J8WwlcfKyb1DM_SRXnHcw7lPxPOWo"/>
+<span class="absolute bottom-0 inset-x-0 bg-inverse-surface/70 text-inverse-on-surface font-label-sm text-[10px] text-center py-0.5">Lat. Izq</span>
+</div>
+<div class="h-16 rounded-lg overflow-hidden relative shadow-sm">
+<img alt="Foto de tablero y kilometraje" class="w-full h-full object-cover" data-alt="Close up inspection photo of the illuminated digital dashboard speedometer showing fuel level and odometer reading" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHrGlx9T5YEKf34KP1wrlsOovvRsthNskmh9wgT7R0zJSk3QLvdUqpJS1-xO6ApWwY_s5v2kWM5pO-6l7s8mlCQj1FiEd2szHJuKS76s_IpgVY2CKsIBXc0caNmZPYC3CczLbSD7rIuum8_vG-BlVakjTuWDFsWaumjXlZM97sr2uc_eMGEFnRTA3gyxsVrj1ZRTqTuCfiLIzv91nN0huqb08_faiFdAaiar6A6fQ"/>
+<span class="absolute bottom-0 inset-x-0 bg-inverse-surface/70 text-inverse-on-surface font-label-sm text-[10px] text-center py-0.5">Tablero</span>
+</div>
+</div>
+<!-- Datos técnicos de inspección -->
+<div class="flex items-center justify-between text-on-surface-variant bg-surface-container-low p-2.5 rounded-xl font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">local_gas_station</span>
+<span>Combustible: <strong class="text-on-surface">3/4 tanque</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+<span>Km: <strong class="text-on-surface">42.890 km</strong></span>
+</div>
+</div>
+<!-- Botón para ver fotos completas -->
+<button class="w-full py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary-container font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors" onclick="mostrarModalFotos()">
+<span class="material-symbols-outlined text-[18px]">photo_library</span>
+      Ver 4 fotos de inspección
+    </button>
+</div>
+<!-- Asistencia Inmediata Valet -->
+<div class="w-full bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">support_agent</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Caseta Valet ParkEAFIT</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Extensión interna: #4500</span>
+</div>
+</div>
+<a class="px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary-container font-label-md text-label-md flex items-center gap-1 transition-colors" href="tel:+5742619500">
+<span class="material-symbols-outlined text-[18px]">call</span>
+      Llamar
+    </a>
+</div>
+<!-- Botón Primario Único y Aclaración -->
+<div class="flex flex-col items-center gap-2 pt-2">
+<button class="w-full h-13 py-3.5 bg-primary-container hover:bg-primary active:scale-[0.99] text-on-primary rounded-2xl font-label-lg text-label-lg shadow-md flex items-center justify-center gap-2 transition-all" id="btn-solicitar" onclick="solicitarEntrega()">
+<span class="material-symbols-outlined text-[22px]">directions_car</span>
+<span>Pedir que traigan mi vehículo</span>
+</button>
+<p class="font-label-sm text-label-sm text-on-surface-variant text-center" id="texto-aclaracion">
+      Tu vehículo estará listo en la bahía de entrega de <strong class="text-on-surface">Portería Regional</strong> en ~8 minutos.
+    </p>
+</div>
+<!-- Modal Diálogo Simulado para Fotos de Inspección -->
+<div class="fixed inset-0 z-50 bg-on-surface/40 backdrop-blur-sm hidden items-center justify-center p-4" id="modal-fotos">
+<div class="w-full max-w-[400px] bg-surface-container-lowest rounded-2xl p-space-md shadow-xl flex flex-col gap-space-sm max-h-[751px] overflow-y-auto">
+<div class="flex items-center justify-between pb-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Registro Fotográfico</h3>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container" onclick="cerrarModalFotos()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Vehículo verificado sin golpes ni rayones previos.</p>
+<div class="flex flex-col gap-3">
+<div class="rounded-xl overflow-hidden shadow-sm">
+<img alt="Inspección detallada frontal" class="w-full h-44 object-cover" data-alt="Front perspective automotive inspection photo of white Mazda 3 in university parking garage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz_Eo5moyHqLx4ETLG9yMU4aE3nu0PYozNV48SxwFyaj-bf7aOEgrSKjBLd1ZXl69due2Cjarxb8L3AOPVU77CeaDybfClm7V3NNEQ3SyUFzkOE0Uxyjf6bQN9bSpuQ9bs0I60ZcqFhKkJ1do5J1pnLz2e5Wlk4F-QHu8Rkhnt6rlhx0egmKRR0lrvg2lwHe9NqSpTDftegt3WOB8-FytL_DXel_LuLMxRnT-TAxk"/>
+<div class="p-2 bg-surface-container-low font-label-sm text-label-sm text-on-surface">1. Frontal y placa: Conforme</div>
+</div>
+<div class="rounded-xl overflow-hidden shadow-sm">
+<img alt="Inspección lateral" class="w-full h-44 object-cover" data-alt="Side body inspection photo of a clean white car highlighting clean doors and mirrors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC61OB0YtKFI_VGJ-tI4k0JljgdUlcI_ztP8-zXl4BYVwd3BBZEm8sIXk3zMR2jE8fh5oBikMs5nLfsXitOpc5pWjZuUJSZ-6E3oERpwuud4a4PUdddJcZc4DWGZCqhGXiH0_Oi7TtvkkQ5vjg4s9x4EuxuwwS1moNt-eO9G-Qp03dqFPsHwrQssF9iybqGUiA60-QO2mH07XrePUYg3PzXxHR0WEwVJTSO6m-nxss"/>
+<div class="p-2 bg-surface-container-low font-label-sm text-label-sm text-on-surface">2. Costado lateral: Sin rayones</div>
+</div>
+</div>
+<button class="w-full py-2.5 bg-surface-container text-on-surface font-label-md text-label-md rounded-xl mt-1" onclick="cerrarModalFotos()">
+        Cerrar inspección
+      </button>
+</div>
+</div>
+</div>
+<script>
+  function actualizarSeleccion(porteria) {
+    const labelRegional = document.getElementById('label-porteria-regional');
+    const label49 = document.getElementById('label-porteria-49');
+    const aclaracion = document.getElementById('texto-aclaracion');
+
+    if (porteria === 'regional') {
+      labelRegional.classList.add('bg-surface-container-low');
+      labelRegional.classList.remove('bg-surface-bright');
+      label49.classList.remove('bg-surface-container-low');
+      label49.classList.add('bg-surface-bright');
+      aclaracion.innerHTML = 'Tu vehículo estará listo en la bahía de entrega de <strong class="text-on-surface">Portería Regional</strong> en ~8 minutos.';
+    } else {
+      label49.classList.add('bg-surface-container-low');
+      label49.classList.remove('bg-surface-bright');
+      labelRegional.classList.remove('bg-surface-container-low');
+      labelRegional.classList.add('bg-surface-bright');
+      aclaracion.innerHTML = 'Tu vehículo estará listo en la bahía de entrega de <strong class="text-on-surface">Portería Cra. 49</strong> en ~12 minutos.';
+    }
+  }
+
+  function mostrarModalFotos() {
+    const modal = document.getElementById('modal-fotos');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function cerrarModalFotos() {
+    const modal = document.getElementById('modal-fotos');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function solicitarEntrega() {
+    const btn = document.getElementById('btn-solicitar');
+    btn.disabled = true;
+    btn.classList.add('opacity-75');
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">refresh</span><span>Despachando vehículo...</span>';
+    
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check_circle</span><span>¡En camino a portería! (~8 min)</span>';
+      btn.classList.remove('bg-primary-container', 'opacity-75');
+      btn.classList.add('bg-tertiary-container');
+    }, 1200);
+  }
+</script></main><nav class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_-4px_12px_rgba(15,23,42,0.04)]" data-active-classes="text-primary-container font-semibold"><div class="max-w-[540px] mx-auto flex items-center justify-around h-16 px-space-xs"><a class="flex-1 flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant transition-colors relative" data-path="inicio" href="#"><span class="material-symbols-outlined text-[24px]">local_parking</span><span class="font-label-sm text-label-sm mt-0.5">Inicio</span></a><a class="flex-1 flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant transition-colors relative" data-path="mi-turno" href="#"><span class="material-symbols-outlined text-[24px]">confirmation_number</span><span class="font-label-sm text-label-sm mt-0.5">Mi turno</span><span class="absolute top-2 right-1/3 w-2 h-2 rounded-full bg-secondary-container"></span></a><a aria-current="page" class="flex-1 flex flex-col items-center justify-center h-full min-h-[44px] transition-colors relative text-primary-container font-semibold" data-path="valet" href="#"><span class="material-symbols-outlined text-[24px]">directions_car</span><span class="font-label-sm text-label-sm mt-0.5">Valet</span></a></div></nav></body></html>

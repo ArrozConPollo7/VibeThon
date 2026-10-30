@@ -1,8 +1,8 @@
 // Íconos SVG en línea, dibujados para ParkEAFIT (sin librerías externas).
 App.icono = (function () {
   const trazos = {
-    casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5V14h4v5.5"/>',
-    turno: '<rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h4"/>',
+    casa: '<path d="M8 20V4h5.5a4.5 4.5 0 0 1 0 9H8"/>',
+    turno: '<path d="M3.5 6.5h17v3.8a1.8 1.8 0 0 0 0 3.4v3.8h-17v-3.8a1.8 1.8 0 0 0 0-3.4Z"/><path d="M14 6.5v2M14 11v2M14 15.5v2"/>',
     llave: '<circle cx="8" cy="15.5" r="4.5"/><path d="m11.2 12.3 8.3-8.3M16 7.5l2.8 2.8M13.5 10l2 2"/>',
     carro: '<path d="M4 16.5V12l2-5.5h12l2 5.5v4.5"/><path d="M3.5 12h17"/><path d="M3.5 16.5h17v2h-3v-2M6.5 16.5v2h-3v-2"/><circle cx="7.5" cy="14.3" r=".6"/><circle cx="16.5" cy="14.3" r=".6"/>',
     moto: '<circle cx="5.5" cy="16.5" r="3"/><circle cx="18.5" cy="16.5" r="3"/><path d="M5.5 16.5 10 11h5l3.5 5.5M14 7h2.5l2 9.5M10 11 8.5 8.5H6"/>',
@@ -19,6 +19,7 @@ App.icono = (function () {
     parlante: '<path d="M4 9.5v5h3.5L12.5 19V5L7.5 9.5Z"/><path d="M16 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
     silencio: '<path d="M4 9.5v5h3.5L12.5 19V5L7.5 9.5Z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/>',
     accesibilidad: '<circle cx="12" cy="4.5" r="1.8"/><path d="M4.5 8.5c5 1.3 10 1.3 15 0M12 10v5M12 15l-3.5 6M12 15l3.5 6"/>',
+    estrella: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8Z"/>',
     pin: '<path d="M12 21s7-6.3 7-11.5a7 7 0 1 0-14 0C5 14.7 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.4"/>'
   };
   return (nombre, tam) =>

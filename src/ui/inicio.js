@@ -1,29 +1,92 @@
-// Pantalla 5.1 del conductor: estado del parqueadero y registro de llegada.
+// Pantalla Inicio (Stitch: "Disponibilidad de Celdas") con el registro de llegada.
 (function () {
-  const { esc } = App;
+  const { esc, icono } = App;
+  const SECTORES = {
+    CARRO: [
+      { zona: 'N', acceso: 'REGIONAL', detalle: 'Acceso Regional' },
+      { zona: 'I', acceso: 'LAS_VEGAS', detalle: 'Acceso Las Vegas' }
+    ],
+    MOTO: [{ zona: 'M', detalle: 'Celdas de moto' }]
+  };
 
-  function ocupacion(r) {
-    const libres = r.libresPorTipo;
+  const tipoVista = () => App.ui.tipoVista || 'CARRO';
+
+  function conteo(celdas) {
+    const de = (estado) => celdas.filter((c) => c.estado === estado).length;
+    return { libres: de('LIBRE'), reservadas: de('RESERVADA'), ocupadas: de('OCUPADA'), total: celdas.length };
+  }
+
+  const celdasDe = (tipo, zona) =>
+    App.celdas().filter((c) => c.tipo === tipo && (!zona || c.zona === zona));
+
+  function ocupacion(tipo) {
+    const c = conteo(celdasDe(tipo));
+    const pct = (n) => (c.total ? (n / c.total) * 100 : 0);
+    const ocupadoPct = Math.round(pct(c.ocupadas + c.reservadas));
     return `<section class="tarjeta">
-      <h2 class="titulo-seccion">¿Cómo está el parqueadero ahora?</h2>
-      <p class="cifra"><strong>${libres.CARRO}</strong> de ${r.totalPorTipo.CARRO} celdas de carro libres</p>
-      <p class="libres-moto">${App.icono('moto', 18)}<b>${libres.MOTO}</b> de ${r.totalPorTipo.MOTO} celdas de moto libres</p>
-      <div class="barra" role="img" aria-label="Ocupación del ${r.ocupacionPct} por ciento">
-        <span style="width:${r.ocupacionPct}%"></span>
+      <div class="ocupacion">
+        <div>
+          <p class="nota">Ocupación general</p>
+          <p class="cifra"><strong>${c.libres}</strong> ${c.libres === 1 ? 'celda libre' : 'celdas libres'}</p>
+          <p class="nota">De ${c.total} celdas de ${tipo === 'MOTO' ? 'moto' : 'carro'}</p>
+        </div>
+        ${App.anillo(ocupadoPct, `Ocupación del ${ocupadoPct} por ciento`, `${ocupadoPct}%`)}
       </div>
-      <p class="nota">${r.ocupacionPct}% ocupado a las ${esc(r.reloj)}</p>
+      <div class="barra-apilada" role="img" aria-label="${c.libres} libres, ${c.reservadas} reservadas, ${c.ocupadas} ocupadas">
+        <span class="seg-libre" style="width:${pct(c.libres)}%"></span>
+        <span class="seg-reservada" style="width:${pct(c.reservadas)}%"></span>
+        <span class="seg-ocupada" style="width:${pct(c.ocupadas)}%"></span>
+      </div>
+      <ul class="conteos">
+        <li><span class="punto punto--libre"></span>${c.libres} libres</li>
+        <li><span class="punto punto--reservada"></span>${c.reservadas} reservadas</li>
+        <li><span class="punto punto--ocupada"></span>${c.ocupadas} ocupadas</li>
+      </ul>
     </section>`;
   }
 
-  function tarjetaAcceso(acceso, datos) {
-    const lleno = datos.enPasarela >= datos.capacidad;
-    return `<button type="button" class="acceso${App.ui.form.acceso === acceso ? ' acceso--activo' : ''}" data-accion="elegirAcceso" data-acceso="${acceso}" aria-pressed="${App.ui.form.acceso === acceso}">
-      <span class="acceso-nombre">${App.NOMBRE_ACCESO[acceso]}</span>
-      ${datos.recomendado ? '<span class="etiqueta-recomendado">Recomendado</span>' : ''}
-      <span class="acceso-dato"><b>${datos.enPasarela}/${datos.capacidad}</b> en pasarela${lleno ? ' (llena)' : ''}</span>
-      <span class="acceso-dato"><b>${datos.afuera}</b> esperando afuera</span>
-      <span class="acceso-dato">Espera: <b>${esc(datos.esperaTexto)}</b></span>
-    </button>`;
+  function selectorTipo(tipo) {
+    const opcion = (id, texto, ico) =>
+      `<button type="button" class="tipo${tipo === id ? ' tipo--activo' : ''}" data-accion="elegirTipo" data-tipo="${id}" aria-pressed="${tipo === id}">${icono(ico, 20)}${texto}</button>`;
+    return `<section aria-label="Tipo de vehículo">
+      <h2 class="titulo-bloque">Tipo de vehículo</h2>
+      <div class="tipos">${opcion('CARRO', 'Automóvil', 'carro')}${opcion('MOTO', 'Moto', 'moto')}</div>
+    </section>`;
+  }
+
+  function chipsConteo(c) {
+    return `<div class="chips">
+      <span class="chip chip--libre">${c.libres} libres</span>
+      <span class="chip chip--reservada">${c.reservadas} reservadas</span>
+      <span class="chip chip--ocupada">${c.ocupadas} ocupadas</span>
+    </div>`;
+  }
+
+  function sector(s, tipo, r) {
+    const c = conteo(celdasDe(tipo, s.zona));
+    const datos = s.acceso ? r.accesos[s.acceso] : null;
+    const interior = `<span class="sector-cab">
+        <span class="sector-icono">${icono(tipo === 'MOTO' ? 'moto' : 'pin', 22)}</span>
+        <span class="sector-texto"><b>${esc(App.nombreZona(s.zona))}</b><small>${s.detalle}</small></span>
+        ${datos && datos.recomendado ? '<span class="chip chip--marca">Recomendado</span>' : ''}
+      </span>
+      ${chipsConteo(c)}
+      ${
+        datos
+          ? `<span class="sector-fila">Pasarela <b>${datos.enPasarela}/${datos.capacidad}</b>${datos.enPasarela >= datos.capacidad ? ' (llena)' : ''}, <b>${datos.afuera}</b> afuera, espera <b>${esc(datos.esperaTexto)}</b></span>`
+          : ''
+      }`;
+    if (!s.acceso) return `<div class="tarjeta sector">${interior}</div>`;
+    const activo = App.ui.form.acceso === s.acceso;
+    return `<button type="button" class="tarjeta sector${activo ? ' sector--activo' : ''}" data-accion="elegirAcceso" data-acceso="${s.acceso}" aria-pressed="${activo}">${interior}</button>`;
+  }
+
+  function sectores(tipo, r) {
+    const lista = SECTORES[tipo];
+    return `<section aria-label="Sectores del campus">
+      <div class="bloque-cab"><h2 class="titulo-bloque">Sectores del campus</h2><span class="nota">${lista.length} ${lista.length === 1 ? 'sector' : 'sectores'}</span></div>
+      <div class="sectores">${lista.map((s) => sector(s, tipo, r)).join('')}</div>
+    </section>`;
   }
 
   function graficoHoras(r) {
@@ -87,17 +150,26 @@
     const recomendado = App.ACCESOS.find((a) => r.accesos[a].recomendado) || 'REGIONAL';
     const accesoElegido = App.ui.form.acceso || recomendado;
     const placaValida = Boolean(App.tipoPlaca(App.ui.form.placa));
+    const tipo = tipoVista();
     return `<div class="pantalla" data-key="p-inicio">
-      ${ocupacion(r)}
-      <div class="accesos">${App.ACCESOS.map((a) => tarjetaAcceso(a, r.accesos[a])).join('')}</div>
+      ${App.tituloPantalla('Disponibilidad de celdas', App.ui.sim.corriendo ? '<span class="chip chip--marca">En vivo</span>' : '', 'Campus EAFIT Medellín')}
+      ${ocupacion(tipo)}
+      ${selectorTipo(tipo)}
+      ${sectores(tipo, r)}
       ${graficoHoras(r)}
       ${formulario(accesoElegido)}
     </div>
     <div class="cta-fija">
-      <button type="submit" form="form-llegada" class="boton boton--primario"${placaValida ? '' : ' disabled'}>Registrar llegada</button>
+      <button type="submit" form="form-llegada" class="boton boton--primario"${placaValida ? '' : ' disabled'}>${icono('turno', 20)}Registrar llegada</button>
       ${placaValida ? '' : '<button type="button" class="enlace" data-accion="irFormulario">Escribe tu placa para continuar</button>'}
     </div>`;
   };
+
+  function minutosDe(textoHora) {
+    if (!textoHora) return null;
+    const [h, m] = textoHora.split(':').map(Number);
+    return h * 60 + m;
+  }
 
   function validar(f) {
     const errores = {};
@@ -109,18 +181,14 @@
     return errores;
   }
 
-  function minutosDe(textoHora) {
-    if (!textoHora) return null;
-    const [h, m] = textoHora.split(':').map(Number);
-    return h * 60 + m;
-  }
-
   function mensajeRegistro(v) {
     const p = App.engine.posicion(v.placa);
     const nombre = App.NOMBRE_ACCESO[v.acceso];
     if (v.estado === 'AFUERA') return `Pasarela llena: esperas afuera, ${p.afueraDelante} delante en ${nombre}`;
     return `Registrado en la pasarela ${nombre}, posición ${p.posicionEnPasarela}`;
   }
+
+  App.acciones.elegirTipo = (el) => App.set({ tipoVista: el.dataset.tipo });
 
   App.acciones.irFormulario = function () {
     const campo = document.querySelector('#form-llegada [name="placa"]');

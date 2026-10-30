@@ -192,3 +192,28 @@ Abrir `index.html` con doble clic y seguir la línea "Siguiente paso". El badge 
 ### Límites
 - `src/engine.stub.js` sigue con sus celdas de prueba: si se usara, el mapa real no reflejaría sus estados. Con el motor real no se carga.
 - La ruta del motor es aproximada y atraviesa edificios en el plano.
+
+## Estado rediseño Stitch
+
+**Fuente:** proyecto de Stitch "ParkEAFIT Campus Parking App". Exportaciones y sistema de diseño en `design/`. El sistema de `design/DESIGN.md` reemplaza el de TAREA_03 (degradado, vidrio, malla y paleta provisional). No se editaron `src/engine.js`, `src/data.js` ni `src/mapa-datos.js`.
+
+### Pantallas
+- **Aplicadas de Stitch:** Inicio, Mi turno (ticket y QR), Servicio valet, Seguimiento de entrega y Calificar servicio.
+- **Hechas con ese estilo:** turno en espera, celda asignada con mapa, pago del valet, entrega del valet, tarjeta de motos, portería y operación.
+- **Orden del valet:** pago → entrega → custodia → seguimiento → calificación.
+
+### Contenido de Stitch que no se usó
+Los datos salen del motor; lo que no existe en él se quitó en vez de simularlo:
+- Sectores Idiomas y Carpooling, y vehículo Bicicleta: fuera del reto.
+- Valet a $6.000: se mantiene $8.000 de TAREA_02. **Confirmar el precio.**
+- Conductor con nombre, modelo del carro, fotos de inspección, combustible, kilometraje y calificación del operador: el motor no los tiene.
+- Tarifa por hora, EafitPay, pago al salir, pico y placa, Bloque 26: sin datos ni reglas.
+- Campana, perfil, llamar, mensaje y "Otro valor" de propina: no tendrían función.
+
+### Simulado solo en la interfaz
+- La calificación y la propina no se guardan en el motor ni se exportan.
+- El PIN de entrega se deriva de la placa.
+- "2 min simulados" repite la regla del motor para devolver el carro.
+
+### Límite
+`src/engine.stub.js` no tiene las zonas reales: con el stub, Inicio mostraría los sectores vacíos. Con el motor real no se activa.

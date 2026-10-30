@@ -67,6 +67,20 @@ window.App = (function () {
   };
   App.loteAcceso = (acceso) => (window.ParkData ? window.ParkData.accesos[acceso].lote : null);
 
+  App.tituloPantalla = (titulo, chip, subtitulo) =>
+    `<header class="cab-pantalla"><h1>${titulo}</h1>${chip || ''}${subtitulo ? `<p>${subtitulo}</p>` : ''}</header>`;
+
+  const RADIO_ANILLO = 40;
+  App.anillo = function (pct, etiqueta, texto) {
+    const circunferencia = 2 * Math.PI * RADIO_ANILLO;
+    return `<div class="anillo-caja" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${etiqueta}">
+      <svg class="anillo" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="anillo-pista" cx="50" cy="50" r="${RADIO_ANILLO}"/>
+        <circle class="anillo-valor" cx="50" cy="50" r="${RADIO_ANILLO}" stroke-dasharray="${circunferencia}" stroke-dashoffset="${circunferencia * (1 - pct / 100)}"/>
+      </svg><span>${texto}</span>
+    </div>`;
+  };
+
   App.placaHTML = (placa, grande) =>
     `<span class="placa${grande ? ' placa--grande' : ''}">${App.esc(placa)}</span>`;
 
@@ -135,6 +149,10 @@ window.App = (function () {
     if (viejo.nodeName === 'INPUT') {
       if (viejo.type === 'checkbox' || viejo.type === 'radio') viejo.checked = nuevo.hasAttribute('checked');
       else if (viejo.value !== (nuevo.getAttribute('value') || '')) viejo.value = nuevo.getAttribute('value') || '';
+      return;
+    }
+    if (viejo.nodeName === 'TEXTAREA') {
+      if (viejo.value !== nuevo.value) viejo.value = nuevo.value;
       return;
     }
     morfHijos(viejo, nuevo);

@@ -78,7 +78,9 @@
 
   function celular(tabForzada) {
     const tab = tabForzada || App.ui.tab;
+    const activo = App.conductorActivo();
     return `<div class="celular">
+      <header class="app-bar"><span class="marca-signo" aria-hidden="true">P</span><div class="app-bar-texto"><span>Campus EAFIT</span><b>ParkEAFIT</b></div>${activo ? App.placaHTML(activo.placa) : ''}</header>
       <div class="celular-pantalla" id="celular-pantalla">${App.pantallas[tab]()}</div>
       <nav class="tabs" aria-label="Secciones del conductor">
         ${TABS.map(
@@ -167,6 +169,10 @@
 
   function actualizarCampo(el, evento) {
     const [rama, nombre] = el.dataset.campo.split('.');
+    if (rama === 'calificacion') {
+      App.set({ calificacion: { estrellas: 0, aspectos: [], propina: 'Sin propina', ...App.ui.calificacion, mensaje: el.value } });
+      return;
+    }
     let valor = el.type === 'checkbox' ? el.checked : el.value;
     if (el.classList.contains('entrada--placa')) valor = formatearPlaca(el, evento, App.ui[rama][nombre]);
     const parche = { [nombre]: valor };
